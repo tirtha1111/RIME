@@ -1,0 +1,6 @@
+{
+  "name": "RIME",
+  "description": "A premium, futuristic voice-native AI assistant designed for seamless, interruptible real-time conversations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
