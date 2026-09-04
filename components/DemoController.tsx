@@ -43,24 +43,24 @@ export default function DemoController({
   ];
 
   return (
-    <div className="w-full max-w-xs bg-black/40 backdrop-blur-lg border border-white/5 rounded-2xl p-5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] relative overflow-hidden">
+    <div className="w-full max-w-xs bg-black/40 backdrop-blur-lg border border-white/5 rounded-2xl p-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] relative overflow-hidden">
       {/* Top micro laser line */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
 
       {/* Title */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-2.5">
         <Activity className="w-3.5 h-3.5 text-cyan-400" />
         <h4 className="font-mono text-[10px] font-bold text-zinc-400 tracking-[0.2em] uppercase">
           SCENARIO CONTROLLER
         </h4>
       </div>
 
-      <p className="text-[10px] text-zinc-500 font-sans leading-relaxed mb-4">
+      <p className="text-[10px] text-zinc-500 font-sans leading-relaxed mb-2">
         Select a conversational sequence to observe RIME&apos;s instantaneous stream recovery engine in action.
       </p>
 
       {/* Scenario triggers */}
-      <div className="flex flex-col gap-2 mb-5">
+      <div className="flex flex-col gap-2 mb-3">
         {scenarios.map((scen) => (
           <button
             key={scen.id}
@@ -87,8 +87,8 @@ export default function DemoController({
       </div>
 
       {/* Sequence steps visualizing the state engine */}
-      <div className="mt-4 border-t border-white/5 pt-4">
-        <div className="flex items-center justify-between mb-3">
+      <div className="mt-2.5 border-t border-white/5 pt-2.5">
+        <div className="flex items-center justify-between mb-2">
           <span className="font-mono text-[9px] font-bold text-zinc-400 tracking-widest uppercase">
             LIVE SEQUENCER
           </span>

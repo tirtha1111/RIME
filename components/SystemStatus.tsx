@@ -36,12 +36,12 @@ export default function SystemStatus({ state, latency }: SystemStatusProps) {
   const interruptControl = getInterruptionStatus();
 
   return (
-    <div className="w-full max-w-xs bg-black/40 backdrop-blur-lg border border-white/5 rounded-2xl p-5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] relative overflow-hidden">
+    <div className="w-full max-w-xs bg-black/40 backdrop-blur-lg border border-white/5 rounded-2xl p-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] relative overflow-hidden">
       {/* Decorative top accent line */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
 
       {/* Title */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-2.5">
         <Terminal className="w-3.5 h-3.5 text-cyan-400/80" />
         <h4 className="font-mono text-[10px] font-bold text-zinc-400 tracking-[0.2em] uppercase">
           VOICE TELEMETRY

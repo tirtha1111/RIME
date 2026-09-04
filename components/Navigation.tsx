@@ -13,7 +13,7 @@ interface NavigationProps {
 
 export default function Navigation({ onDemoClick, onAboutClick, onSystemClick, currentState }: NavigationProps) {
   return (
-    <header className="fixed top-4 left-4 right-4 z-50 max-w-7xl mx-auto">
+    <header className="w-full shrink-0 z-50 max-w-7xl mx-auto px-4 mt-3">
       <motion.div
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

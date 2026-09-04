@@ -350,7 +350,7 @@ export default function Home() {
   };
 
   return (
-    <main className="relative min-h-screen bg-[#020205] text-white flex flex-col items-center justify-between overflow-x-hidden selection:bg-cyan-500/20 selection:text-cyan-200">
+    <main className="relative min-h-screen lg:h-screen lg:max-h-screen bg-[#020205] text-white flex flex-col items-center justify-between lg:overflow-hidden overflow-y-auto selection:bg-cyan-500/20 selection:text-cyan-200">
       
       {/* 3D Cyberpunk Background Layer */}
       <BackgroundParticles />
@@ -364,15 +364,15 @@ export default function Home() {
       />
 
       {/* Main Screen Layout Container */}
-      <div className="w-full max-w-7xl mx-auto px-4 pt-24 pb-12 flex-1 flex flex-col items-center justify-center relative z-10">
+      <div className="w-full max-w-7xl mx-auto px-4 pt-2 pb-2 flex-1 flex flex-col items-center justify-between relative z-10 overflow-hidden">
         
         {/* Absolute header / Hero banner */}
-        <div className="text-center mt-4 mb-6 relative">
+        <div className="text-center mt-1 mb-1 relative">
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 0.6, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="text-[9px] font-mono tracking-[0.4em] text-cyan-400 font-extrabold uppercase mb-2"
+            className="text-[8px] font-mono tracking-[0.4em] text-cyan-400 font-extrabold uppercase mb-1"
           >
             VOICE INTELLIGENCE OPERATING PLATFORM
           </motion.p>
@@ -381,28 +381,27 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent"
+            className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight leading-tight bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent"
           >
-            Talk naturally.<br/>
-            <span className="text-cyan-400 bg-none text-cyan-400/90 font-extrabold shadow-cyan-400/10">Interrupt freely.</span>
+            Talk naturally. <span className="text-cyan-400 bg-none text-cyan-400/90 font-extrabold shadow-cyan-400/10">Interrupt freely.</span>
           </motion.h1>
 
           <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.5 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="text-xs sm:text-sm text-zinc-400 max-w-lg mx-auto mt-3 tracking-wide font-normal"
+            className="text-[10px] sm:text-xs text-zinc-400 max-w-md mx-auto mt-1 tracking-wide font-normal"
           >
             An AI voice agent designed to understand context collisions, adapt and recover in real time without audio drift.
           </motion.p>
         </div>
 
         {/* Central interactive grid */}
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center justify-center my-4">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-4 items-center justify-center my-1.5 flex-1">
           
           {/* Left panel: Scenario sequencer (Desktop) */}
           <div className="hidden lg:block lg:col-span-3 h-full">
-            <div className="sticky top-28">
+            <div className="sticky top-20">
               <DemoController 
                 onStartDemo={handleStartDemo} 
                 onReset={handleAbort} 
@@ -414,40 +413,40 @@ export default function Home() {
           </div>
 
           {/* Center Column: Globe & States */}
-          <div className="col-span-1 lg:col-span-6 flex flex-col items-center justify-center relative min-h-[440px] sm:min-h-[500px]">
+          <div className="col-span-1 lg:col-span-6 flex flex-col items-center justify-center relative min-h-[260px] sm:min-h-[300px] h-[340px]">
             
             {/* Globe Canvas */}
             <div className="relative w-full h-full flex items-center justify-center">
               <AIGlobe state={state} speechVolume={speechVolume} />
               
               {/* Foreground Overlay HUD details */}
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none select-none z-20">
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none select-none z-20">
                 <StateIndicator state={state} />
               </div>
             </div>
 
             {/* Microphone Control Button */}
-            <div className="mt-4">
+            <div className="mt-2 z-20">
               <VoiceControl state={state} onClick={handleMicTap} />
             </div>
           </div>
 
           {/* Right Column: Telemetry Feed */}
           <div className="hidden lg:block lg:col-span-3 h-full">
-            <div className="sticky top-28">
+            <div className="sticky top-20">
               <SystemStatus state={state} latency={latency} />
             </div>
           </div>
         </div>
 
         {/* Bottom Area: Transcripts & Responsive columns for Mobile devices */}
-        <div className="w-full flex flex-col items-center gap-6 mt-6">
+        <div className="w-full flex flex-col items-center gap-3 mt-1 pb-1">
           
           {/* Live transcripts panel (All devices) */}
           <ConversationPanel transcript={transcript} currentState={state} />
 
           {/* Inline system status blocks for mobile devices */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-6 w-full max-w-2xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4 w-full max-w-2xl">
             <DemoController 
               onStartDemo={handleStartDemo} 
               onReset={handleAbort} 
@@ -462,7 +461,7 @@ export default function Home() {
       </div>
 
       {/* Footer system details */}
-      <footer className="w-full max-w-7xl mx-auto px-6 py-4 border-t border-white/5 relative z-10 flex flex-col sm:flex-row items-center justify-between text-zinc-500 font-mono text-[9px] gap-2">
+      <footer className="w-full max-w-7xl mx-auto px-6 py-2 border-t border-white/5 relative z-10 flex flex-col sm:flex-row items-center justify-between text-zinc-500 font-mono text-[9px] gap-1 shrink-0">
         <div className="flex items-center gap-1.5 uppercase tracking-widest font-black text-cyan-400">
           <span className="relative flex h-1.5 w-1.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
