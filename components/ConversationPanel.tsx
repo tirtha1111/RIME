@@ -17,12 +17,15 @@ interface ConversationPanelProps {
 }
 
 export default function ConversationPanel({ transcript, currentState }: ConversationPanelProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Scroll transcript panel to the bottom when new items are added
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    // Scroll transcript panel to the bottom when new items are added without shifting window scroll position
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
     }
   }, [transcript]);
 
@@ -44,7 +47,7 @@ export default function ConversationPanel({ transcript, currentState }: Conversa
       </div>
 
       {/* Transcript container */}
-      <div className="h-32 overflow-y-auto pr-1 flex flex-col gap-3.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+      <div ref={scrollContainerRef} className="h-32 overflow-y-auto pr-1 flex flex-col gap-3.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
         <AnimatePresence initial={false}>
           {transcript.length === 0 ? (
             <motion.div
@@ -155,7 +158,6 @@ export default function ConversationPanel({ transcript, currentState }: Conversa
             })
           )}
         </AnimatePresence>
-        <div ref={bottomRef} />
       </div>
     </div>
   );

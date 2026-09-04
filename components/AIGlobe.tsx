@@ -490,7 +490,7 @@ export default function AIGlobe({ state, speechVolume = 0.5 }: AIGlobeProps) {
       {/* 3D WebGL Canvas Container */}
       <div 
         ref={containerRef} 
-        className="w-[260px] h-[260px] sm:w-[320px] sm:h-[320px] md:w-[360px] md:h-[360px] relative z-10"
+        className="w-[200px] h-[200px] sm:w-[240px] sm:h-[240px] md:w-[260px] md:h-[260px] relative z-10"
         id="rime-webgl-canvas-container"
       />
 
@@ -503,16 +503,16 @@ export default function AIGlobe({ state, speechVolume = 0.5 }: AIGlobeProps) {
           ${state === 'LISTENING' ? 'bg-cyan-500/10 border-cyan-400/20 scale-110 blur-xl animate-pulse' : ''}
           ${state === 'SPEAKING' ? 'bg-cyan-400/8 border-cyan-400/20 scale-110 blur-xl' : ''}
           ${state === 'READY' ? 'bg-cyan-950/20 border-cyan-500/5 scale-100 blur-2xl' : ''}
-          w-[300px] h-[300px] sm:w-[360px] sm:h-[360px] md:w-[420px] md:h-[420px] border
+          w-[240px] h-[240px] sm:w-[280px] sm:h-[280px] md:w-[310px] md:h-[310px] border
         `}
       />
 
       {/* Subtly rotated decorative overlay rings */}
       <div 
-        className="absolute w-[230px] h-[230px] sm:w-[280px] sm:h-[280px] md:w-[320px] md:h-[320px] rounded-full border border-dashed border-cyan-500/10 pointer-events-none z-0 rotate-12 animate-[spin_100s_linear_infinite]"
+        className="absolute w-[180px] h-[180px] sm:w-[220px] sm:h-[220px] md:w-[240px] md:h-[240px] rounded-full border border-dashed border-cyan-500/10 pointer-events-none z-0 rotate-12 animate-[spin_100s_linear_infinite]"
       />
       <div 
-        className="absolute w-[250px] h-[250px] sm:w-[300px] sm:h-[300px] md:w-[340px] md:h-[340px] rounded-full border border-cyan-500/5 pointer-events-none z-0 -rotate-45 animate-[spin_140s_linear_infinite]"
+        className="absolute w-[200px] h-[200px] sm:w-[240px] sm:h-[240px] md:w-[260px] md:h-[260px] rounded-full border border-cyan-500/5 pointer-events-none z-0 -rotate-45 animate-[spin_140s_linear_infinite]"
       />
     </div>
   );

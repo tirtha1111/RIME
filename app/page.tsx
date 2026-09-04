@@ -364,7 +364,7 @@ export default function Home() {
       />
 
       {/* Main Screen Layout Container */}
-      <div className="w-full max-w-7xl mx-auto px-4 pt-2 pb-2 flex-1 flex flex-col items-center justify-between relative z-10 overflow-hidden">
+      <div className="w-full max-w-7xl mx-auto px-4 pt-2 pb-2 flex-1 flex flex-col items-center justify-start gap-1 relative z-10 overflow-hidden">
         
         {/* Absolute header / Hero banner */}
         <div className="text-center mt-1 mb-1 relative">
@@ -381,7 +381,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight leading-tight bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent"
+            className="text-lg sm:text-xl md:text-2xl font-black tracking-tight leading-tight bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent"
           >
             Talk naturally. <span className="text-cyan-400 bg-none text-cyan-400/90 font-extrabold shadow-cyan-400/10">Interrupt freely.</span>
           </motion.h1>
@@ -390,14 +390,14 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.5 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="text-[10px] sm:text-xs text-zinc-400 max-w-md mx-auto mt-1 tracking-wide font-normal"
+            className="text-[9px] sm:text-[10px] text-zinc-400 max-w-md mx-auto mt-0.5 tracking-wide font-normal"
           >
             An AI voice agent designed to understand context collisions, adapt and recover in real time without audio drift.
           </motion.p>
         </div>
 
         {/* Central interactive grid */}
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-4 items-center justify-center my-1.5 flex-1">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-4 items-center justify-center my-1 flex-1">
           
           {/* Left panel: Scenario sequencer (Desktop) */}
           <div className="hidden lg:block lg:col-span-3 h-full">
@@ -413,7 +413,7 @@ export default function Home() {
           </div>
 
           {/* Center Column: Globe & States */}
-          <div className="col-span-1 lg:col-span-6 flex flex-col items-center justify-center relative min-h-[260px] sm:min-h-[300px] h-[340px]">
+          <div className="col-span-1 lg:col-span-6 flex flex-col items-center justify-center relative min-h-[200px] sm:min-h-[240px] h-[270px]">
             
             {/* Globe Canvas */}
             <div className="relative w-full h-full flex items-center justify-center">
@@ -426,7 +426,7 @@ export default function Home() {
             </div>
 
             {/* Microphone Control Button */}
-            <div className="mt-2 z-20">
+            <div className="mt-1 z-20">
               <VoiceControl state={state} onClick={handleMicTap} />
             </div>
           </div>
@@ -440,7 +440,7 @@ export default function Home() {
         </div>
 
         {/* Bottom Area: Transcripts & Responsive columns for Mobile devices */}
-        <div className="w-full flex flex-col items-center gap-3 mt-1 pb-1">
+        <div className="w-full flex flex-col items-center gap-2 mt-1 pb-1">
           
           {/* Live transcripts panel (All devices) */}
           <ConversationPanel transcript={transcript} currentState={state} />
