@@ -41,6 +41,8 @@ export default function AIGlobe({ state, speechVolume = 0.5 }: AIGlobeProps) {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.domElement.style.display = 'block';
+    renderer.domElement.style.margin = '0 auto';
     container.appendChild(renderer.domElement);
 
     // 4. Lights
@@ -490,7 +492,7 @@ export default function AIGlobe({ state, speechVolume = 0.5 }: AIGlobeProps) {
       {/* 3D WebGL Canvas Container */}
       <div 
         ref={containerRef} 
-        className="w-[200px] h-[200px] sm:w-[240px] sm:h-[240px] md:w-[260px] md:h-[260px] relative z-10"
+        className="w-[200px] h-[200px] sm:w-[240px] sm:h-[240px] md:w-[260px] md:h-[260px] relative z-10 flex items-center justify-center mx-auto"
         id="rime-webgl-canvas-container"
       />
 

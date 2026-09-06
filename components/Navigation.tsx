@@ -25,7 +25,7 @@ export default function Navigation({ onDemoClick, onAboutClick, onSystemClick, c
           <div className="relative flex items-center justify-center">
             {/* Logo container with cyan glow */}
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/10 to-blue-600/10 border border-cyan-400/30 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.15)] overflow-hidden">
-              <span className="text-[10px] font-black tracking-widest text-cyan-400">R</span>
+              <span className="text-[12px] font-black tracking-widest text-cyan-400">Φ</span>
             </div>
             {/* Spinning orbital around logo */}
             <div className="absolute inset-0 w-8 h-8 border border-cyan-500/20 rounded-full border-t-transparent animate-spin duration-3000 pointer-events-none" />
@@ -33,8 +33,8 @@ export default function Navigation({ onDemoClick, onAboutClick, onSystemClick, c
 
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-bold tracking-[0.25em] text-white">RIME</span>
-              <span className="text-[7px] text-cyan-400 border border-cyan-400/30 px-1 py-0.2 rounded-full font-bold uppercase tracking-widest leading-none bg-cyan-400/5">v1.0</span>
+              <span className="text-sm font-bold tracking-[0.25em] text-white" style={{ fontFamily: "'Orbitron', sans-serif" }}>PHI AI</span>
+              <span className="text-[7px] text-cyan-400 border border-cyan-400/30 px-1 py-0.2 rounded-full font-bold uppercase tracking-widest leading-none bg-cyan-400/5">v2.4</span>
             </div>
             <p className="text-[8px] text-zinc-400 tracking-[0.18em] font-medium leading-none mt-0.5">VOICE INTELLIGENCE</p>
           </div>

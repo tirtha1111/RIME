@@ -22,7 +22,7 @@ export default function StateIndicator({ state }: StateIndicatorProps) {
     },
     LISTENING: {
       text: 'LISTENING NOW',
-      subText: 'RIME is streaming audio, interrupt whenever you want',
+      subText: 'PHI AI is streaming audio, interrupt whenever you want',
       color: 'text-cyan-400 font-extrabold',
       bgColor: 'bg-cyan-400/10',
       borderColor: 'border-cyan-400/30',
@@ -39,8 +39,8 @@ export default function StateIndicator({ state }: StateIndicatorProps) {
       glow: 'shadow-[0_0_20px_rgba(59,130,246,0.15)]',
     },
     SPEAKING: {
-      text: 'RIME SPEAKING',
-      subText: 'Streaming synthesized voice audio (Rime Voice Engine)',
+      text: 'PHI AI SPEAKING',
+      subText: 'Streaming synthesized voice tokens (PHI AI Voice Engine)',
       color: 'text-emerald-400 font-extrabold',
       bgColor: 'bg-emerald-500/10',
       borderColor: 'border-emerald-500/30',

@@ -36,7 +36,7 @@ export default function VoiceControl({ state, onClick }: VoiceControlProps) {
       case 'SPEAKING':
         return {
           icon: AlertOctagon,
-          text: 'RIME is Speaking',
+          text: 'PHI AI is Speaking',
           subText: 'TAP ANYWHERE TO INTERRUPT',
           glowColor: 'shadow-[0_0_40px_rgba(16,185,129,0.3)]',
           borderColor: 'border-emerald-400/80 animate-pulse',

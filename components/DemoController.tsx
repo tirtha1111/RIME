@@ -37,9 +37,9 @@ export default function DemoController({
   const demoSteps = [
     { label: 'MIC TRIGGER', desc: 'USER: "Find me a train..."' },
     { label: 'AI REASONING', desc: 'Thinking tokens...' },
-    { label: 'SPEECH FEED', desc: 'RIME: "Checking options..."' },
+    { label: 'SPEECH FEED', desc: 'PHI AI: "Checking options..."' },
     { label: 'COLLISION / INTERRUPT', desc: 'USER: "Wait, Mumbai instead."' },
-    { label: 'RECOVER / ADAPT', desc: 'RIME: "Got it. Mumbai..."' },
+    { label: 'RECOVER / ADAPT', desc: 'PHI AI: "Got it. Mumbai..."' },
   ];
 
   return (
@@ -56,7 +56,7 @@ export default function DemoController({
       </div>
 
       <p className="text-[10px] text-zinc-500 font-sans leading-relaxed mb-2">
-        Select a conversational sequence to observe RIME&apos;s instantaneous stream recovery engine in action.
+        Select a conversational sequence to observe PHI AI&apos;s instantaneous stream recovery engine in action.
       </p>
 
       {/* Scenario triggers */}

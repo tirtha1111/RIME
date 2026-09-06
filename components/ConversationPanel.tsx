@@ -6,7 +6,7 @@ import { AlertTriangle, CornerDownRight, CheckCircle, Radio } from 'lucide-react
 
 export interface TranscriptItem {
   id: string;
-  speaker: 'USER' | 'RIME';
+  speaker: 'USER' | 'PHI AI' | 'RIME';
   text: string;
   status: 'normal' | 'interrupted' | 'recovering' | 'recovered' | 'active';
 }
@@ -18,9 +18,10 @@ interface ConversationPanelProps {
 
 export default function ConversationPanel({ transcript, currentState }: ConversationPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const endMarkerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Scroll transcript panel to the bottom when new items are added without shifting window scroll position
+    // Scroll transcript panel internally to the bottom without shifting window scroll position
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo({
         top: scrollContainerRef.current.scrollHeight,
@@ -30,7 +31,7 @@ export default function ConversationPanel({ transcript, currentState }: Conversa
   }, [transcript]);
 
   return (
-    <div className="w-full max-w-2xl bg-black/40 backdrop-blur-lg border border-white/5 rounded-2xl p-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] relative overflow-hidden">
+    <div className="w-full h-[320px] sm:h-[360px] lg:h-[380px] flex flex-col bg-black/40 backdrop-blur-lg border border-white/5 rounded-2xl p-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] relative overflow-hidden shrink-0">
       {/* Laser header edge accent */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
       
@@ -39,7 +40,7 @@ export default function ConversationPanel({ transcript, currentState }: Conversa
         Live Voice Stream // T-800ms
       </div>
 
-      <div className="flex items-center gap-2 mb-2.5">
+      <div className="flex items-center gap-2 mb-2.5 shrink-0">
         <Radio className={`w-3.5 h-3.5 text-cyan-400 ${currentState === 'SPEAKING' || currentState === 'LISTENING' ? 'animate-pulse' : ''}`} />
         <h4 className="font-mono text-[10px] font-bold text-zinc-400 tracking-[0.2em] uppercase">
           TELEMETRY STREAM & TRANSCRIPT
@@ -47,7 +48,10 @@ export default function ConversationPanel({ transcript, currentState }: Conversa
       </div>
 
       {/* Transcript container */}
-      <div ref={scrollContainerRef} className="h-32 overflow-y-auto pr-1 flex flex-col gap-3.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+      <div 
+        ref={scrollContainerRef} 
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1 flex flex-col gap-3 scrollbar-thin scrollbar-thumb-cyan-500/20 scrollbar-track-transparent"
+      >
         <AnimatePresence initial={false}>
           {transcript.length === 0 ? (
             <motion.div
@@ -105,7 +109,7 @@ export default function ConversationPanel({ transcript, currentState }: Conversa
                       <span className={`font-mono text-[9px] font-black tracking-widest
                         ${isUser ? 'text-cyan-400' : 'text-emerald-400'}
                       `}>
-                        {item.speaker}
+                        {item.speaker === 'RIME' ? 'PHI AI' : item.speaker}
                       </span>
                       
                       {/* Sub-label/timestamp */}
@@ -158,6 +162,7 @@ export default function ConversationPanel({ transcript, currentState }: Conversa
             })
           )}
         </AnimatePresence>
+        <div ref={endMarkerRef} className="h-1 shrink-0" />
       </div>
     </div>
   );

@@ -35,7 +35,7 @@ type SystemState = 'READY' | 'LISTENING' | 'THINKING' | 'SPEAKING' | 'INTERRUPTE
 export default function Home() {
   const [state, setState] = useState<SystemState>('READY');
   const [latency, setLatency] = useState<number | null>(null);
-  const [speechVolume, setSpeechVolume] = useState<number>(0.2);
+  const [speechVolume, setSpeechVolume] = useState<number>(0);
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   const [activeDemoStep, setActiveDemoStep] = useState<number>(-1);
   const [showAboutModal, setShowAboutModal] = useState<boolean>(false);
@@ -71,14 +71,16 @@ export default function Home() {
   // 1. Unified Interruption Sequence
   const triggerInterruption = (customUserPrompt = 'Wait, Mumbai instead.') => {
     clearAllTimeouts();
+    rimeSound.stopAll(); // Stop all sound immediately on interruption
+    setSpeechVolume(0);
     rimeSound.playInterruptionZap();
     setState('INTERRUPTED');
     setLatency(null);
 
-    // Truncate the last RIME speech item if it was active
+    // Truncate the last PHI AI speech item if it was active
     setTranscript(prev => {
       const copy = [...prev];
-      const lastRimeIdx = copy.map(item => item.speaker).lastIndexOf('RIME');
+      const lastRimeIdx = copy.map(item => item.speaker).findLastIndex(s => s === 'PHI AI' || s === 'RIME');
       if (lastRimeIdx !== -1 && copy[lastRimeIdx].status === 'active') {
         const text = copy[lastRimeIdx].text;
         // Truncate sentence to show it was cut off
@@ -108,14 +110,15 @@ export default function Home() {
       rimeSound.playRecoveryChime();
     }, 400);
 
-    // Transition from recovering back to processing the new routing request
+    // Transition from recovering back to processing the new routing request (silent reasoning)
     addTimeout(() => {
       setState('THINKING');
-      rimeSound.startHum();
+      rimeSound.stopAll(); // Silence during reasoning
+      setSpeechVolume(0);
       setLatency(120); // Quick adaptive recovery latency
     }, 1800);
 
-    // RIME speaks the updated corrected response
+    // PHI AI speaks the updated corrected response
     addTimeout(() => {
       rimeSound.stopHum();
       setState('SPEAKING');
@@ -123,7 +126,7 @@ export default function Home() {
         ...prev,
         {
           id: Math.random().toString(),
-          speaker: 'RIME',
+          speaker: 'PHI AI',
           text: "Got it. I'll check Mumbai instead. Analyzing high-speed trains from Chennai central directly to Mumbai Terminus.",
           status: 'recovered',
         }
@@ -135,9 +138,10 @@ export default function Home() {
       });
     }, 3200);
 
-    // Transition back to READY
+    // Transition back to READY - stop all sound when replied
     addTimeout(() => {
-      rimeSound.stopSpeakingSynth();
+      rimeSound.stopAll(); // Stop sound when replied
+      setSpeechVolume(0);
       setState('READY');
       setActiveDemoStep(-1);
       setLatency(null);
@@ -147,8 +151,8 @@ export default function Home() {
   // 2. Start standard demo scenario
   const handleStartDemo = (scenarioId: string) => {
     clearAllTimeouts();
-    rimeSound.stopSpeakingSynth();
-    rimeSound.stopHum();
+    rimeSound.stopAll();
+    setSpeechVolume(0);
     setTranscript([]);
     setLatency(null);
 
@@ -167,14 +171,15 @@ export default function Home() {
             status: 'normal',
           }
         ]);
-        rimeSound.playMicStop();
+        rimeSound.stopAll(); // Stop sound when user finishes speaking
       }, 1500);
 
-      // AI Reasoning
+      // AI Reasoning (silent)
       addTimeout(() => {
         setActiveDemoStep(1);
         setState('THINKING');
-        rimeSound.startHum();
+        rimeSound.stopAll(); // Silence during reasoning
+        setSpeechVolume(0);
         setLatency(190); // Simulated cold start latency
       }, 2500);
 
@@ -187,7 +192,7 @@ export default function Home() {
           ...prev,
           {
             id: 'demo-2',
-            speaker: 'RIME',
+            speaker: 'PHI AI',
             text: "Sure, I'm checking the available high-speed rail connections for Bengaluru departing today—",
             status: 'active',
           }
@@ -223,13 +228,14 @@ export default function Home() {
             status: 'normal',
           }
         ]);
-        rimeSound.playMicStop();
+        rimeSound.stopAll(); // Stop sound when user finishes speaking
       }, 1500);
 
       addTimeout(() => {
         setActiveDemoStep(1);
         setState('THINKING');
-        rimeSound.startHum();
+        rimeSound.stopAll(); // Silence during reasoning
+        setSpeechVolume(0);
         setLatency(85);
       }, 2500);
 
@@ -241,7 +247,7 @@ export default function Home() {
           ...prev,
           {
             id: 'weather-2',
-            speaker: 'RIME',
+            speaker: 'PHI AI',
             text: "Tokyo radar shows a low pressure system moving inland, bringing winds of—",
             status: 'active',
           }
@@ -266,26 +272,29 @@ export default function Home() {
   // 3. User manual microphone tap interaction
   const handleMicTap = () => {
     if (state === 'READY') {
-      // Begin manual query capture simulation
+      // Begin manual query capture simulation - Stop all sound immediately when asking
       clearAllTimeouts();
+      rimeSound.stopAll();
+      setSpeechVolume(0);
       setLatency(null);
       setState('LISTENING');
       rimeSound.playMicStart();
 
       // Automatically simulate user finishing speech after 3 seconds
       addTimeout(() => {
-        rimeSound.playMicStop();
+        rimeSound.stopAll(); // Stop sound when user finishes asking
         setTranscript(prev => [
           ...prev,
           {
             id: Math.random().toString(),
             speaker: 'USER',
-            text: "Hello RIME, run diagnostic checks on the orbital grid.",
+            text: "Hello PHI AI, run diagnostic checks on the orbital grid.",
             status: 'normal',
           }
         ]);
         setState('THINKING');
-        rimeSound.startHum();
+        rimeSound.stopAll(); // Silence during reasoning
+        setSpeechVolume(0);
         setLatency(210);
       }, 3000);
 
@@ -297,7 +306,7 @@ export default function Home() {
           ...prev,
           {
             id: Math.random().toString(),
-            speaker: 'RIME',
+            speaker: 'PHI AI',
             text: "Orbital diagnostic loop initiated. Checking thermal vents, node links, and telemetry stream synchronize buffers—",
             status: 'active',
           }
@@ -308,15 +317,16 @@ export default function Home() {
         });
       }, 4800);
 
-      // Complete naturally if not interrupted
+      // Complete naturally if not interrupted - Stop sound when replied
       addTimeout(() => {
         if (stateRef.current === 'SPEAKING') {
-          rimeSound.stopSpeakingSynth();
+          rimeSound.stopAll(); // Stop sound when replied
+          setSpeechVolume(0);
           setState('READY');
           setLatency(null);
           setTranscript(prev => {
             const copy = [...prev];
-            const lastIdx = copy.map(item => item.speaker).lastIndexOf('RIME');
+            const lastIdx = copy.map(item => item.speaker).findLastIndex(s => s === 'PHI AI' || s === 'RIME');
             if (lastIdx !== -1) {
               copy[lastIdx] = {
                 ...copy[lastIdx],
@@ -330,159 +340,122 @@ export default function Home() {
       }, 10500);
 
     } else if (state === 'LISTENING') {
-      // Cancel capture
+      // Cancel capture / stop sound
       clearAllTimeouts();
-      rimeSound.playMicStop();
+      rimeSound.stopAll();
+      setSpeechVolume(0);
       setState('READY');
     } else if (state === 'SPEAKING') {
-      // MANUAL INTERRUPTION TRIGGER! Extremely rewarding to click while speaking
+      // MANUAL INTERRUPTION TRIGGER!
+      rimeSound.stopAll();
+      setSpeechVolume(0);
       triggerInterruption('Wait, abort diagnostic check and open grid maps.');
     }
   };
 
   const handleAbort = () => {
     clearAllTimeouts();
-    rimeSound.stopSpeakingSynth();
-    rimeSound.stopHum();
+    rimeSound.stopAll(); // Stop all sound
+    setSpeechVolume(0);
     setState('READY');
     setActiveDemoStep(-1);
     setLatency(null);
   };
 
   return (
-    <main className="relative min-h-screen lg:h-screen lg:max-h-screen bg-[#020205] text-white flex flex-col items-center justify-between lg:overflow-hidden overflow-y-auto selection:bg-cyan-500/20 selection:text-cyan-200">
+    <main className="relative h-screen max-h-screen w-full bg-[#020205] text-white flex flex-col items-center justify-between overflow-hidden selection:bg-cyan-500/20 selection:text-cyan-200">
       
       {/* 3D Cyberpunk Background Layer */}
       <BackgroundParticles />
 
-      {/* Header / Top Nav */}
-      <Navigation 
-        currentState={state} 
-        onDemoClick={() => handleStartDemo('train_bengaluru')} 
-        onAboutClick={() => setShowAboutModal(true)} 
-        onSystemClick={() => setShowDocModal(true)}
-      />
+      {/* Header / Top Nav (Removed) */}
+      <div className="hidden" />
 
       {/* Main Screen Layout Container */}
-      <div className="w-full max-w-7xl mx-auto px-4 pt-2 pb-2 flex-1 flex flex-col items-center justify-start gap-1 relative z-10 overflow-hidden">
+      <div className="w-full max-w-7xl mx-auto px-4 py-2 flex-1 flex flex-col items-center justify-between relative z-10 overflow-hidden">
         
         {/* Absolute header / Hero banner */}
-        <div className="text-center mt-1 mb-1 relative">
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 0.6, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="text-[8px] font-mono tracking-[0.4em] text-cyan-400 font-extrabold uppercase mb-1"
-          >
-            VOICE INTELLIGENCE OPERATING PLATFORM
-          </motion.p>
-          
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
+        <div id="phi-ai-top-center-brand" className="text-center mt-1 sm:mt-2 mb-1 relative shrink-0 flex flex-col items-center justify-center">
+          {/* Distinctive PHI AI Emblem / Title in Orbitron Font */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-lg sm:text-xl md:text-2xl font-black tracking-tight leading-tight bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent"
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-center justify-center mb-1.5"
+          >
+            <div className="flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-cyan-950/40 border border-cyan-500/40 backdrop-blur-md shadow-[0_0_24px_rgba(6,182,212,0.22)] hover:border-cyan-400/60 transition-all duration-300">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400 shadow-[0_0_10px_#22d3ee]"></span>
+              </span>
+              <h1 
+                className="font-phi text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-[0.32em] text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 via-white to-cyan-300 drop-shadow-[0_0_16px_rgba(34,211,238,0.45)] select-none pl-1"
+                style={{ fontFamily: "'Orbitron', 'Syne', sans-serif" }}
+              >
+                PHI AI
+              </h1>
+              <span className="text-[8px] sm:text-[9px] font-mono tracking-widest px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30 uppercase">
+                Voice Core
+              </span>
+            </div>
+          </motion.div>
+
+          <motion.h2 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="text-base sm:text-lg md:text-xl font-bold tracking-tight leading-tight bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent"
           >
             Talk naturally. <span className="text-cyan-400 bg-none text-cyan-400/90 font-extrabold shadow-cyan-400/10">Interrupt freely.</span>
-          </motion.h1>
+          </motion.h2>
 
           <motion.p 
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
+            animate={{ opacity: 0.6 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
             className="text-[9px] sm:text-[10px] text-zinc-400 max-w-md mx-auto mt-0.5 tracking-wide font-normal"
           >
             An AI voice agent designed to understand context collisions, adapt and recover in real time without audio drift.
           </motion.p>
         </div>
 
-        {/* Central interactive grid */}
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-4 items-center justify-center my-1 flex-1">
+        {/* Central interactive balanced layout: Globe & Mic in exact dead center, Transcript on right */}
+        <div className="w-full flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 xl:gap-8 my-auto relative">
           
-          {/* Left panel: Scenario sequencer (Desktop) */}
-          <div className="hidden lg:block lg:col-span-3 h-full">
-            <div className="sticky top-20">
-              <DemoController 
-                onStartDemo={handleStartDemo} 
-                onReset={handleAbort} 
-                currentState={state}
-                demoProgress={activeDemoStep !== -1 ? (activeDemoStep + 1) * 20 : 0}
-                activeDemoStep={activeDemoStep}
-              />
-            </div>
-          </div>
+          {/* Left Spacer: Symmetrically balances the right transcript panel so Center is at exact 50% dead center */}
+          <div className="hidden lg:block w-72 xl:w-80 shrink-0 pointer-events-none" />
 
-          {/* Center Column: Globe & States */}
-          <div className="col-span-1 lg:col-span-6 flex flex-col items-center justify-center relative min-h-[200px] sm:min-h-[240px] h-[270px]">
+          {/* Center Column: Globe & States & Microphone (DEAD CENTER of screen) */}
+          <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full max-w-md">
             
-            {/* Globe Canvas */}
-            <div className="relative w-full h-full flex items-center justify-center">
-              <AIGlobe state={state} speechVolume={speechVolume} />
-              
-              {/* Foreground Overlay HUD details */}
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none select-none z-20">
-                <StateIndicator state={state} />
-              </div>
+            {/* Status indicator text placed cleanly right above the globe */}
+            <div className="mb-2 shrink-0 flex justify-center">
+              <StateIndicator state={state} />
             </div>
 
-            {/* Microphone Control Button */}
-            <div className="mt-1 z-20">
+            {/* Globe Canvas Container */}
+            <div className="relative w-[210px] h-[210px] sm:w-[240px] sm:h-[240px] md:w-[260px] md:h-[260px] flex items-center justify-center shrink-0">
+              <AIGlobe state={state} speechVolume={speechVolume} />
+            </div>
+
+            {/* Microphone Control Button directly centered underneath the globe */}
+            <div className="mt-2 shrink-0 flex justify-center">
               <VoiceControl state={state} onClick={handleMicTap} />
             </div>
           </div>
 
-          {/* Right Column: Telemetry Feed */}
-          <div className="hidden lg:block lg:col-span-3 h-full">
-            <div className="sticky top-20">
-              <SystemStatus state={state} latency={latency} />
-            </div>
+          {/* Right Column: Telemetry Feed / Transcript Panel */}
+          <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col items-center justify-center z-20">
+            <ConversationPanel transcript={transcript} currentState={state} />
           </div>
         </div>
 
-        {/* Bottom Area: Transcripts & Responsive columns for Mobile devices */}
-        <div className="w-full flex flex-col items-center gap-2 mt-1 pb-1">
-          
-          {/* Live transcripts panel (All devices) */}
-          <ConversationPanel transcript={transcript} currentState={state} />
-
-          {/* Inline system status blocks for mobile devices */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4 w-full max-w-2xl">
-            <DemoController 
-              onStartDemo={handleStartDemo} 
-              onReset={handleAbort} 
-              currentState={state}
-              demoProgress={activeDemoStep !== -1 ? (activeDemoStep + 1) * 20 : 0}
-              activeDemoStep={activeDemoStep}
-            />
-            <SystemStatus state={state} latency={latency} />
-          </div>
-
-        </div>
+        {/* Bottom spacer */}
+        <div className="w-full h-1 shrink-0" />
       </div>
 
-      {/* Footer system details */}
-      <footer className="w-full max-w-7xl mx-auto px-6 py-2 border-t border-white/5 relative z-10 flex flex-col sm:flex-row items-center justify-between text-zinc-500 font-mono text-[9px] gap-1 shrink-0">
-        <div className="flex items-center gap-1.5 uppercase tracking-widest font-black text-cyan-400">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-400"></span>
-          </span>
-          SESSION #001
-        </div>
-        
-        <div className="uppercase tracking-widest text-center">
-          Real-time voice interaction // RIME Synthesis Engine
-        </div>
-
-        <div className="flex items-center gap-4">
-          <span className="uppercase tracking-wider">
-            Response: {latency ? `${latency} ms` : '-- ms'}
-          </span>
-          <span className="uppercase tracking-wider text-emerald-400">
-            JITTER: &lt; 2ms
-          </span>
-        </div>
-      </footer>
+      {/* Footer system details (Removed) */}
+      <div className="hidden" />
 
       {/* RIME Core Concepts & Architecture slideover / Modal (ABOUT) */}
       <AnimatePresence>
@@ -504,8 +477,8 @@ export default function Home() {
               
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center font-bold text-xs text-cyan-400 font-mono">A</div>
-                  <h3 className="font-mono text-xs font-black tracking-widest uppercase text-zinc-100">RIME CONVERSATIONAL ARCHITECTURE</h3>
+                  <div className="w-6 h-6 rounded bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center font-bold text-xs text-cyan-400 font-mono">Φ</div>
+                  <h3 className="font-mono text-xs font-black tracking-widest uppercase text-zinc-100">PHI AI CONVERSATIONAL ARCHITECTURE</h3>
                 </div>
                 <button 
                   onClick={() => setShowAboutModal(false)}
@@ -533,7 +506,7 @@ export default function Home() {
                 </div>
 
                 <p>
-                  RIME solves this through an continuous telemetry stream. Built for low-latency, voice-first devices, its core concept keeps the speech synthesis channel and reasoning modules fully decoupled, allowing spontaneous interruption at any point during output.
+                  PHI AI solves this through a continuous telemetry stream. Built for low-latency, voice-first devices, its core concept keeps the speech synthesis channel and reasoning modules fully decoupled, allowing spontaneous interruption at any point during output.
                 </p>
 
                 <div className="grid grid-cols-3 gap-3 pt-2">
@@ -639,7 +612,7 @@ export default function Home() {
                 </div>
 
                 <p className="text-zinc-400 text-[10px]">
-                  RIME uses WebSockets for duplex communication. Audio frames (PCM raw buffers) are sent upstream, while synthetic speech envelopes are steamed downstream in chunks. For details on Cloud Run streaming adapters, check the root documentation files.
+                  PHI AI uses WebSockets for duplex communication. Audio frames (PCM raw buffers) are sent upstream, while synthetic speech envelopes are streamed downstream in chunks. For details on Cloud Run streaming adapters, check the root documentation files.
                 </p>
               </div>
             </motion.div>
