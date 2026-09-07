@@ -89,8 +89,6 @@ export default function VoiceControl({
   const current = getButtonContent();
   const ControlIcon = current.icon;
 
-  const isDisabled = state === 'THINKING' || state === 'INTERRUPTED' || state === 'RECOVERING';
-
   return (
     <div className="flex flex-col items-center justify-center gap-3 relative z-20">
       <div className="relative">
@@ -117,20 +115,16 @@ export default function VoiceControl({
         {/* The interactive main circle button */}
         <motion.button
           id="rime-voice-control-button"
-          disabled={isDisabled}
           onClick={onClick}
-          whileHover={isDisabled ? {} : { scale: 1.05 }}
-          whileTap={isDisabled ? {} : { scale: 0.95 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           className={`w-20 h-20 sm:w-22 sm:h-22 rounded-full border ${current.borderColor} ${current.bgColor} ${current.glowColor}
             flex items-center justify-center cursor-pointer transition-all duration-300 backdrop-blur-md relative overflow-hidden group
-            ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}
           `}
-          title={state === 'SPEAKING' ? 'Tap to interrupt' : 'Tap to toggle Always-On Mic'}
+          title={state === 'SPEAKING' ? 'Tap to interrupt and speak' : 'Tap to start or stop voice input'}
         >
           {/* Internal rotating light sweep */}
-          {!isDisabled && (
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-cyan-400/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-          )}
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-cyan-400/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
 
           {/* Icon */}
           <motion.div

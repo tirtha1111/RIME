@@ -200,9 +200,9 @@ export default function Home() {
     });
   };
 
-  // Trigger interruption when user speaks during assistant speech
+  // Trigger interruption when user speaks or clicks during assistant speech / processing
   const triggerInterruption = useCallback(() => {
-    if (stateRef.current !== 'SPEAKING') return;
+    if (stateRef.current !== 'SPEAKING' && stateRef.current !== 'THINKING' && stateRef.current !== 'RECOVERING' && stateRef.current !== 'INTERRUPTED') return;
 
     // Invalidate any in-flight chat query API responses immediately
     currentChatSessionIdRef.current += 1;
@@ -216,13 +216,15 @@ export default function Home() {
     const previousText = currentSpokenTextRef.current || transcriptRef.current.findLast(t => t.speaker === 'PHI AI')?.text || '';
     
     // Save interrupted context so Groq openai/gpt-oss-120b follows up smoothly
-    const contextObj: InterruptedContext = {
-      previousAssistantText: previousText,
-      wasInterrupted: true,
-      timestamp: Date.now()
-    };
-    setInterruptedContext(contextObj);
-    interruptedContextRef.current = contextObj;
+    if (previousText) {
+      const contextObj: InterruptedContext = {
+        previousAssistantText: previousText,
+        wasInterrupted: true,
+        timestamp: Date.now()
+      };
+      setInterruptedContext(contextObj);
+      interruptedContextRef.current = contextObj;
+    }
 
     // Truncate assistant transcript item with visual interruption marker
     setTranscript(prev => {
@@ -242,10 +244,6 @@ export default function Home() {
     });
 
     setState('INTERRUPTED');
-    
-    addTimeout(() => {
-      setState('LISTENING');
-    }, 250);
   }, []);
 
   // Send query to Groq openai/gpt-oss-120b
@@ -746,17 +744,23 @@ export default function Home() {
   const handleMicTap = () => {
     setupAudioVAD();
 
-    if (state === 'SPEAKING') {
-      // Tap to interrupt
-      triggerInterruption();
-    } else if (state === 'LISTENING') {
-      // Tap to immediately stop and submit the speech
-      if (vadSpeakingRef.current) {
-        vadSpeakingRef.current = false;
+    const currentState = stateRef.current;
+
+    if (currentState === 'LISTENING' && isRecordingRef.current) {
+      // Tap while listening/recording: stop recording and submit
+      vadSpeakingRef.current = false;
+      stopRecording();
+    } else {
+      // Tap while READY, SPEAKING, THINKING, INTERRUPTED, or RECOVERING:
+      if (currentState === 'SPEAKING' || currentState === 'THINKING' || currentState === 'RECOVERING' || currentState === 'INTERRUPTED') {
+        triggerInterruption();
+      }
+
+      if (isRecordingRef.current) {
         stopRecording();
       }
-    } else {
-      // Manual start recording
+
+      // Immediately start manual voice recording
       vadSpeakingRef.current = true;
       setState('LISTENING');
       rimeSound.playMicStart();
