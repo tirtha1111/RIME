@@ -460,6 +460,25 @@ export default function Home() {
           const resData = await response.json();
           const text = (resData.text || '').trim();
           
+          // Filter out Whisper silent/hallucinatory phrases (such as "Thank you.", "You", "Subscribed", etc.)
+          const cleanNorm = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim();
+          const WHISPER_HALLUCINATIONS = [
+            'thank you',
+            'thank you very much',
+            'thank you for watching',
+            'you',
+            'subscribed',
+            'please subscribe',
+            'bye',
+            'watching',
+            'youtube'
+          ];
+          if (WHISPER_HALLUCINATIONS.includes(cleanNorm) || cleanNorm === '') {
+            console.log("Filtered out Whisper hallucination:", text);
+            setState('READY');
+            return;
+          }
+          
           if (text.length >= 2) {
             // Echo/self-interruption cancellation check
             if (currentSpokenTextRef.current) {
@@ -568,16 +587,19 @@ export default function Home() {
         // Always-On voice activity tracking loop
         if (isAlwaysOnActiveRef.current) {
           // Speak / speech activity gate
-          const SPEECH_THRESHOLD = 15; // Raised from 8 to 15 to ignore low-level background noise
+          const SPEECH_THRESHOLD = 15; // Ignore low-level background noise
           
           if (normalized > SPEECH_THRESHOLD) {
             consecutiveSpeechFrames++;
             
-            // Require consecutive frames (e.g., 5 frames ~80ms) of active sound to trigger VAD
-            if (consecutiveSpeechFrames >= 5) {
+            // To interrupt the AI, require continuous sustained sound (e.g. 50 frames ~800ms, representing 3-5 continuous words)
+            // If the AI is NOT speaking, we want immediate responsiveness (e.g. 5 frames ~80ms)
+            const requiredFrames = stateRef.current === 'SPEAKING' ? 50 : 5;
+            
+            if (consecutiveSpeechFrames >= requiredFrames) {
               silentTicks = 0;
               
-              // Immediate interruption on validated voice activity
+              // Immediate interruption on validated sustained continuous voice activity
               if (stateRef.current === 'SPEAKING') {
                 triggerInterruption();
               }
