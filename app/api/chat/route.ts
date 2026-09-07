@@ -194,15 +194,8 @@ export async function POST(req: Request) {
 
     // Build Interruption Follow-up Guidance
     let interruptionNote = "";
-    if (interruptedContext && interruptedContext.wasInterrupted && interruptedContext.previousAssistantText) {
-      interruptionNote = `\n\nCRITICAL INTERRUPTION CONTEXT:
-The user interrupted your previous response mid-speech.
-Your previous interrupted response was: "${interruptedContext.previousAssistantText}".
-The user's new interruption input is: "${query}".
-Guidelines for follow-up:
-1. Seamlessly acknowledge or pivot to their new input.
-2. Follow up smoothly by addressing what they just said while connecting back or neatly concluding the previous topic if relevant.
-3. Keep the flow completely natural for continuous spoken voice conversation.`;
+    if (interruptedContext && interruptedContext.wasInterrupted) {
+      interruptionNote = `\n\nNOTE: The user interrupted previous speech to ask a new question. Do NOT recap, repeat, or try to finish your previous interrupted statement. Focus 100% on answering ONLY the user's latest query ("${query}") directly.`;
     }
 
     // 1. Check if query is explicitly asking to open / show existing image in a separate window
@@ -332,6 +325,9 @@ Here is the verified, live real-time data sourced right now from ${realtimeInfo.
 ${realtimeInfo.data}
 ${interruptionNote}
 
+CRITICAL RULE:
+Answer DIRECTLY and ONLY the user's latest query ("${query}"). Do NOT recap, summarize, or repeat previous questions or previous answers. Do NOT say "In response to your previous question..." or "Continuing from earlier...". Answer ONLY the latest question directly.
+
 Voice synthesis guidelines:
 1. Synthesize this information into a concise, direct, and pleasant spoken answer (1-3 sentences).
 2. ALWAYS include the exact real-time numbers, rates, prices, or temperatures present in the data (e.g. exact rupee/dollar stock price, temperature degrees, or current facts).
@@ -347,14 +343,20 @@ Voice synthesis guidelines:
       }
     } else {
       const historyContext = Array.isArray(history) && history.length > 0
-        ? `\nRecent conversation history:\n${history.slice(-3).map((h: any) => `${h.speaker}: ${h.text}`).join('\n')}`
+        ? `\nRecent conversation context (DO NOT recap or repeat these past questions):\n${history.slice(-3).map((h: any) => `${h.speaker}: ${h.text}`).join('\n')}`
         : '';
 
       const systemPrompt = `You are P.H.I., an intelligent, polite, and concise voice assistant powered exclusively by Groq LPU inference using model ${GROQ_MODEL}.
 You are equipped with a built-in high-resolution FLUX visual synthesis engine and a dedicated separate window image viewer.
 If the user asks if you can generate images, draw, paint, or make pictures, eagerly confirm that you can generate any visual they describe and ask what they would like to create.
 Never state that you cannot generate images or that you are a text-only assistant.
-Answer directly in 1-2 friendly sentences suitable for spoken voice output.
+
+CRITICAL RULE:
+Answer DIRECTLY and ONLY the user's latest query ("${query}").
+Do NOT recap, summarize, repeat, or rehash previous questions or previous answers.
+Do NOT say "As I was saying...", "To recap your question...", or "Regarding your previous question...".
+Answer ONLY the latest question directly in 1-2 friendly sentences.
+
 Do not use markdown asterisks, hash signs, or bullet points.${historyContext}${interruptionNote}
 Language requirement: ${langNote}`;
 
