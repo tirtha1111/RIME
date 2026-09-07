@@ -526,6 +526,7 @@ export default function Home() {
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
         audioCtx = new AudioCtx();
         audioContextRef.current = audioCtx;
+        rimeAudioClient.setAudioContext(audioCtx);
       }
 
       // Safe resume
@@ -725,6 +726,7 @@ export default function Home() {
       if (AudioCtx) {
         const audioCtx = new AudioCtx();
         audioContextRef.current = audioCtx;
+        rimeAudioClient.setAudioContext(audioCtx);
         
         // Warm up sound buffer (Warms up audio hardware and gets past iOS auto-suspend policies)
         try {

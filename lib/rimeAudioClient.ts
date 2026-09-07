@@ -8,6 +8,10 @@ class RimeAudioClient {
   private animFrameId: number | null = null;
   private isPlaying: boolean = false;
 
+  setAudioContext(ctx: AudioContext) {
+    this.audioContext = ctx;
+  }
+
   private getAudioContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
     if (!this.audioContext) {
