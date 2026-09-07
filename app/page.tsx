@@ -549,6 +549,7 @@ export default function Home() {
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       let silentTicks = 0;
+      let consecutiveSpeechFrames = 0; // Accumulates consecutive loud frames to filter transient noise
 
       const checkVolume = () => {
         if (!analyserRef.current) return;
@@ -567,28 +568,36 @@ export default function Home() {
         // Always-On voice activity tracking loop
         if (isAlwaysOnActiveRef.current) {
           // Speak / speech activity gate
-          const SPEECH_THRESHOLD = 8;
+          const SPEECH_THRESHOLD = 15; // Raised from 8 to 15 to ignore low-level background noise
           
           if (normalized > SPEECH_THRESHOLD) {
-            silentTicks = 0;
+            consecutiveSpeechFrames++;
             
-            // Immediate interruption on voice activity
-            if (stateRef.current === 'SPEAKING') {
-              triggerInterruption();
-            }
-            
-            if (!vadSpeakingRef.current) {
-              vadSpeakingRef.current = true;
-              setState('LISTENING');
-              rimeSound.playMicStart();
-              startRecording();
-            }
-            
-            if (vadSilenceTimerRef.current) {
-              clearTimeout(vadSilenceTimerRef.current);
-              vadSilenceTimerRef.current = null;
+            // Require consecutive frames (e.g., 5 frames ~80ms) of active sound to trigger VAD
+            if (consecutiveSpeechFrames >= 5) {
+              silentTicks = 0;
+              
+              // Immediate interruption on validated voice activity
+              if (stateRef.current === 'SPEAKING') {
+                triggerInterruption();
+              }
+              
+              if (!vadSpeakingRef.current) {
+                vadSpeakingRef.current = true;
+                setState('LISTENING');
+                rimeSound.playMicStart();
+                startRecording();
+              }
+              
+              if (vadSilenceTimerRef.current) {
+                clearTimeout(vadSilenceTimerRef.current);
+                vadSilenceTimerRef.current = null;
+              }
             }
           } else {
+            // Decay consecutive speech tracker if input drops below threshold
+            consecutiveSpeechFrames = Math.max(0, consecutiveSpeechFrames - 2);
+            
             if (vadSpeakingRef.current) {
               silentTicks++;
               // If consecutive silent frames denote a complete sentence pause (approx 1.4s of silence)
