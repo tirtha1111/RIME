@@ -243,6 +243,13 @@ export default function Home() {
     rimeAudioClient.stop();
     rimeSound.stopAll();
 
+    // Stop speech recognition to clear buffer for the next turn
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+    }
+
     const userQuery = queryText || transcriptRef.current.findLast(t => t.speaker === 'USER')?.text || '';
     if (!userQuery.trim() || userQuery === '...') {
       setState('READY');
@@ -354,7 +361,7 @@ export default function Home() {
   // Validate if captured text constitutes an actual verbal statement (filters out room noise, clicks, breathing)
   const isValidVerbalStatement = useCallback((text: string): boolean => {
     const cleaned = text.trim();
-    if (!cleaned || cleaned.length < 3) return false;
+    if (!cleaned || cleaned.length < 2) return false;
     // Must contain actual alphabetic or unicode word characters
     const hasLetters = /[a-zA-Z\u0900-\u097F\u00C0-\u024F\u4E00-\u9FFF\u3040-\u30FF\u0600-\u06FF]/.test(cleaned);
     if (!hasLetters) return false;
@@ -372,9 +379,9 @@ export default function Home() {
     const cleaned = text.trim();
     if (!isValidVerbalStatement(cleaned)) return false;
     const words = cleaned.split(/\s+/).filter(Boolean);
-    // At least 2 spoken words, OR a distinct verbal command of at least 4 characters
+    // At least 2 spoken words, OR a distinct verbal command of at least 2 characters (e.g., "no", "stop", "wait")
     if (words.length >= 2) return true;
-    if (words.length === 1 && cleaned.length >= 4) return true;
+    if (words.length === 1 && cleaned.length >= 2) return true;
     return false;
   }, [isValidVerbalStatement]);
 
@@ -441,8 +448,12 @@ export default function Home() {
 
     recognition.onresult = (event: any) => {
       const results = Array.from(event.results);
-      const latestResult: any = results[results.length - 1];
-      const transcriptText = (latestResult[0]?.transcript || '').trim();
+      
+      // Map over all results and join them to obtain the full complete sentence(s) in this session
+      const transcriptText = results
+        .map((result: any) => result[0]?.transcript || '')
+        .join(' ')
+        .trim();
 
       // Filter out empty or noise fragments
       if (!isValidVerbalStatement(transcriptText)) return;
@@ -687,10 +698,10 @@ export default function Home() {
       <div className="relative z-10 w-full h-full max-w-7xl mx-auto flex flex-col justify-between p-4 sm:p-6 lg:p-8">
         
         {/* Top Header */}
-        <header className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-white/5 pb-4 shrink-0">
+        <header className="w-full grid grid-cols-1 md:grid-cols-3 items-center gap-4 border-b border-white/5 pb-4 shrink-0">
           
           {/* Logo & Identity */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 justify-start">
             <div className="relative w-9 h-9 rounded-xl bg-black/90 border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.25)] flex items-center justify-center overflow-hidden group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -720,8 +731,18 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Center: PHI AI Brand Name styled beautifully with distinct font */}
+          <div className="flex flex-col items-center justify-center text-center">
+            <h2 className="font-serif italic text-2xl sm:text-3xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-200 to-indigo-400 drop-shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+              PHI AI
+            </h2>
+            <p className="text-[8px] sm:text-[9px] text-zinc-500 font-mono tracking-[0.3em] uppercase mt-0.5">
+              Personal Helpful Intelligence
+            </p>
+          </div>
+
           {/* Right: Dropdown Language Selector & Status Badges */}
-          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-2">
             
             {/* Rime Language Dropdown Selector */}
             <LanguageSelector
