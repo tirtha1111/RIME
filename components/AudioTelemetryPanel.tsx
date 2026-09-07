@@ -31,7 +31,7 @@ export default function AudioTelemetryPanel({
   const activeBars = Math.min(totalBars, Math.round((micEnergy / 100) * totalBars));
 
   return (
-    <div className="w-full h-[360px] sm:h-[400px] lg:h-[440px] flex flex-col bg-black/40 backdrop-blur-lg border border-white/5 rounded-2xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.6)] relative overflow-hidden shrink-0">
+    <div className="w-full h-[220px] sm:h-[240px] flex flex-col bg-black/40 backdrop-blur-lg border border-white/5 rounded-2xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.6)] relative overflow-hidden shrink-0">
       {/* Top accent glow */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
 
@@ -130,42 +130,6 @@ export default function AudioTelemetryPanel({
               ? `Previous context retained: "${interruptedTextPreview.slice(0, 60)}..."`
               : 'Decision-making is preserved without noise interruptions. Only full verbal statements interrupt and follow up.'}
           </p>
-        </div>
-
-        {/* Inference Engine Status */}
-        <div className="p-3 rounded-xl bg-zinc-950/40 border border-white/5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Cpu className="w-3 h-3 text-cyan-400" />
-              Groq LPU Model
-            </span>
-            <span className="font-mono text-[9px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-1.5 py-0.5 rounded">
-              LPU Active
-            </span>
-          </div>
-          <div className="font-mono text-xs text-zinc-200 font-bold tracking-wide">
-            openai/gpt-oss-120b
-          </div>
-          <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
-            Target Latency: &lt; 250ms • Streaming Engine
-          </div>
-        </div>
-
-        {/* Audio Synthesis Profile */}
-        <div className="p-3 rounded-xl bg-zinc-950/40 border border-white/5">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Radio className="w-3 h-3 text-cyan-400" />
-              Voice Profile
-            </span>
-            <span className="text-xs">{selectedLanguage.flag}</span>
-          </div>
-          <div className="font-mono text-[11px] text-zinc-200 mt-1">
-            {selectedLanguage.name} ({selectedLanguage.nativeName})
-          </div>
-          <div className="text-[9px] font-mono text-zinc-500 mt-0.5">
-            Speaker: {selectedSpeaker} • Model: {selectedLanguage.defaultModel.toUpperCase()}
-          </div>
         </div>
 
       </div>

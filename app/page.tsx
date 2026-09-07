@@ -788,7 +788,7 @@ export default function Home() {
       <div className="relative z-10 w-full h-full max-w-7xl mx-auto flex flex-col justify-between p-4 sm:p-6 lg:p-8">
         
         {/* Top Header */}
-        <header className="w-full grid grid-cols-1 md:grid-cols-3 items-center gap-4 border-b border-white/5 pb-4 shrink-0">
+        <header className="w-full flex items-center justify-between border-b border-white/5 pb-4 shrink-0">
           
           {/* Logo & Identity */}
           <div className="flex items-center gap-3 justify-start">
@@ -802,38 +802,13 @@ export default function Home() {
               <div className="absolute inset-0 bg-cyan-400/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
             </div>
             
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-mono text-sm font-black tracking-widest uppercase text-zinc-100">
-                  P.H.I.
-                </h1>
-                <span className="font-mono text-[9px] text-cyan-400 bg-cyan-950/40 border border-cyan-500/30 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
-                  GROQ OSS-120B
-                </span>
-                <span className="font-mono text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  ALWAYS-ON VAD
-                </span>
-              </div>
-              <p className="text-[10px] text-zinc-400 font-mono tracking-wider">
-                Hands-Free Voice Assistant // Seamless Interruption &amp; Follow-up
-              </p>
-            </div>
+            <h1 className="font-mono text-sm font-black tracking-widest uppercase text-zinc-100">
+              P.H.I.
+            </h1>
           </div>
 
-          {/* Center: PHI AI Brand Name styled beautifully with distinct font */}
-          <div className="flex flex-col items-center justify-center text-center">
-            <h2 className="font-serif italic text-2xl sm:text-3xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-200 to-indigo-400 drop-shadow-[0_0_15px_rgba(6,182,212,0.15)]">
-              PHI AI
-            </h2>
-            <p className="text-[8px] sm:text-[9px] text-zinc-500 font-mono tracking-[0.3em] uppercase mt-0.5">
-              Personal Helpful Intelligence
-            </p>
-          </div>
-
-          {/* Right: Dropdown Language Selector & Status Badges */}
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-2">
-            
+          {/* Right: Dropdown Language Selector */}
+          <div className="flex items-center justify-end gap-2">
             {/* Rime Language Dropdown Selector */}
             <LanguageSelector
               selectedLanguage={selectedLanguage}
@@ -844,31 +819,6 @@ export default function Home() {
               isRimeConfigured={isRimeConfigured}
               isPlayingPreview={isPlayingPreview}
             />
-
-            {/* Rime Voice Status Pill */}
-            <button
-              type="button"
-              id="rime-status-badge"
-              onClick={() => setShowSecretsModal(true)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono transition-all backdrop-blur-md cursor-pointer ${
-                isRimeConfigured
-                  ? 'bg-emerald-950/40 hover:bg-emerald-950/60 border-emerald-500/40 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
-                  : 'bg-zinc-900/90 hover:bg-zinc-800 border-white/10 text-zinc-300'
-              }`}
-            >
-              <Key className="w-3.5 h-3.5" />
-              <span>{isRimeConfigured ? 'Rime Active' : 'API Key Setup'}</span>
-            </button>
-
-            {/* Architecture Info Button */}
-            <button
-              type="button"
-              onClick={() => setShowAboutModal(true)}
-              className="p-1.5 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 border border-white/10 text-zinc-400 hover:text-zinc-200 transition-all cursor-pointer"
-              title="About Architecture"
-            >
-              <HelpCircle className="w-4 h-4" />
-            </button>
           </div>
         </header>
 

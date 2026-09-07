@@ -81,6 +81,7 @@ export default function StateIndicator({ state }: StateIndicatorProps) {
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           className={`flex items-center gap-3 px-5 py-2.5 rounded-full border ${current.bgColor} ${current.borderColor} ${current.glow} backdrop-blur-md transition-all duration-300`}
           id="rime-state-indicator-badge"
+          style={{ marginLeft: '0px', marginTop: '-50px' }}
         >
           {/* Pulsing indicator */}
           <span className="relative flex h-2 w-2">
