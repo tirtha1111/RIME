@@ -58,7 +58,7 @@ export default function AudioTelemetryPanel({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-cyan-500/20">
+      <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-hidden">
         
         {/* Real-time Voice Activity Meter */}
         <div className="p-3 rounded-xl bg-zinc-950/40 border border-white/5">

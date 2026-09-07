@@ -4,3 +4,28 @@
 .font-phi {
   font-family: 'Orbitron', 'Syne', sans-serif;
 }
+
+/* Elegant, modern, ultra-thin cyber scrollbars */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.15); /* Sleek translucent cyan thumb */
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.45); /* Highlighted active state */
+}
+
+/* Firefox compatibility */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(6, 182, 212, 0.15) transparent;
+}

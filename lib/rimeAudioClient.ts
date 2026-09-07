@@ -7,6 +7,7 @@ class RimeAudioClient {
   private currentAudio: HTMLAudioElement | null = null;
   private animFrameId: number | null = null;
   private isPlaying: boolean = false;
+  private currentSessionId: number = 0; // Tracks active speaking session to discard stale async downloads
 
   setAudioContext(ctx: AudioContext) {
     this.audioContext = ctx;
@@ -25,6 +26,8 @@ class RimeAudioClient {
 
   stop() {
     this.isPlaying = false;
+    this.currentSessionId++; // Instantly invalidate any active in-flight fetches or decoding steps
+    
     if (this.animFrameId !== null) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
@@ -73,6 +76,7 @@ class RimeAudioClient {
     onError?: (err: any) => void;
   }) {
     this.stop();
+    const sessionId = this.currentSessionId; // Capture the session ID assigned to this request
 
     try {
       // Request Rime TTS audio from our server proxy
@@ -82,15 +86,29 @@ class RimeAudioClient {
         body: JSON.stringify({ text, lang, speaker, modelId }),
       });
 
+      // Abort if this request was interrupted during fetch
+      if (sessionId !== this.currentSessionId) {
+        console.log("Discarded in-flight TTS download due to interruption");
+        return;
+      }
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: 'Rime API request failed' }));
         console.warn('Rime TTS server error, using fallback:', errorData);
         if (onError) onError(errorData);
-        this.fallbackSpeak({ text, lang, onStart, onVolumeChange, onEnded });
+        if (sessionId === this.currentSessionId) {
+          this.fallbackSpeak({ text, lang, onStart, onVolumeChange, onEnded, sessionId });
+        }
         return;
       }
 
       const audioArrayBuffer = await res.arrayBuffer();
+      
+      // Abort if interrupted during arrayBuffer download
+      if (sessionId !== this.currentSessionId) {
+        return;
+      }
+
       if (!audioArrayBuffer || audioArrayBuffer.byteLength === 0) {
         throw new Error('Empty audio stream received from Rime TTS.');
       }
@@ -101,9 +119,14 @@ class RimeAudioClient {
           if (ctx.state === 'suspended') {
             await ctx.resume();
           }
+          
+          if (sessionId !== this.currentSessionId) return;
 
           // Decode MP3 audio buffer
           const audioBuffer = await ctx.decodeAudioData(audioArrayBuffer.slice(0));
+          
+          // Abort if interrupted during audio decoding
+          if (sessionId !== this.currentSessionId) return;
 
           // Set up source and analyser
           const source = ctx.createBufferSource();
@@ -123,7 +146,7 @@ class RimeAudioClient {
           if (onVolumeChange) {
             const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
             const trackVolume = () => {
-              if (!this.isPlaying || !this.analyser) return;
+              if (sessionId !== this.currentSessionId || !this.isPlaying || !this.analyser) return;
               this.analyser.getByteFrequencyData(dataArray);
               let sum = 0;
               for (let i = 0; i < dataArray.length; i++) {
@@ -137,6 +160,7 @@ class RimeAudioClient {
           }
 
           source.onended = () => {
+            if (sessionId !== this.currentSessionId) return;
             this.isPlaying = false;
             if (this.animFrameId !== null) {
               cancelAnimationFrame(this.animFrameId);
@@ -155,7 +179,9 @@ class RimeAudioClient {
         }
       }
 
-      // Secondary fallback: HTMLAudioElement without crossOrigin (avoids iframe blob CORS security errors)
+      if (sessionId !== this.currentSessionId) return;
+
+      // Secondary fallback: HTMLAudioElement without crossOrigin
       const blob = new Blob([audioArrayBuffer], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(blob);
       const audio = new Audio();
@@ -164,10 +190,15 @@ class RimeAudioClient {
       this.isPlaying = true;
 
       audio.onplay = () => {
+        if (sessionId !== this.currentSessionId) {
+          audio.pause();
+          return;
+        }
         if (onStart) onStart();
       };
 
       audio.onended = () => {
+        if (sessionId !== this.currentSessionId) return;
         this.stop();
         if (onVolumeChange) onVolumeChange(0);
         URL.revokeObjectURL(audioUrl);
@@ -175,19 +206,21 @@ class RimeAudioClient {
       };
 
       audio.onerror = (e) => {
+        if (sessionId !== this.currentSessionId) return;
         console.warn('HTML5 Audio playback error, using speech synthesis fallback:', e);
         this.stop();
         URL.revokeObjectURL(audioUrl);
         if (onVolumeChange) onVolumeChange(0);
-        this.fallbackSpeak({ text, lang, onStart, onVolumeChange, onEnded });
+        this.fallbackSpeak({ text, lang, onStart, onVolumeChange, onEnded, sessionId });
       };
 
       await audio.play();
 
     } catch (err: any) {
+      if (sessionId !== this.currentSessionId) return;
       console.error('Rime speech failed, falling back to synthesis:', err);
       if (onError) onError(err);
-      this.fallbackSpeak({ text, lang, onStart, onVolumeChange, onEnded });
+      this.fallbackSpeak({ text, lang, onStart, onVolumeChange, onEnded, sessionId });
     }
   }
 
@@ -198,13 +231,16 @@ class RimeAudioClient {
     onStart,
     onVolumeChange,
     onEnded,
+    sessionId,
   }: {
     text: string;
     lang: string;
     onStart?: () => void;
     onVolumeChange?: (vol: number) => void;
     onEnded?: () => void;
+    sessionId?: number;
   }) {
+    if (sessionId !== undefined && sessionId !== this.currentSessionId) return;
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       if (onEnded) onEnded();
       return;
@@ -234,10 +270,18 @@ class RimeAudioClient {
 
     let volumeInterval: any = null;
     utterance.onstart = () => {
+      if (sessionId !== undefined && sessionId !== this.currentSessionId) {
+        window.speechSynthesis.cancel();
+        return;
+      }
       if (onStart) onStart();
       if (onVolumeChange) {
         let step = 0;
         volumeInterval = setInterval(() => {
+          if (sessionId !== undefined && sessionId !== this.currentSessionId) {
+            clearInterval(volumeInterval);
+            return;
+          }
           const simulatedVol = 0.25 + Math.sin(step * 0.4) * 0.15;
           onVolumeChange(simulatedVol);
           step++;
