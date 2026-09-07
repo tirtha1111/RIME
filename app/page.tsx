@@ -441,8 +441,11 @@ export default function Home() {
         setState('THINKING');
         
         try {
+          const mimeType = audioBlob.type || 'audio/webm';
+          const extension = mimeType.split(';')[0].split('/')[1] || 'webm';
+          
           const formData = new FormData();
-          formData.append('file', audioBlob, 'speech.webm');
+          formData.append('file', audioBlob, `speech.${extension}`);
           formData.append('lang', selectedLangRef.current.id);
           
           const response = await fetch('/api/transcribe', {
@@ -517,14 +520,25 @@ export default function Home() {
   // Initialize Microphone & VAD Analyser Node (Metering & voice-driven recording control)
   const setupAudioVAD = useCallback(async () => {
     try {
-      if (audioContextRef.current && micStreamRef.current) return;
+      // Warm up/create AudioContext synchronously at the start of the user gesture to satisfy mobile Safari's policy
+      let audioCtx = audioContextRef.current;
+      if (!audioCtx) {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        audioCtx = new AudioCtx();
+        audioContextRef.current = audioCtx;
+      }
+
+      // Safe resume
+      if (audioCtx.state === 'suspended') {
+        try {
+          audioCtx.resume();
+        } catch (e) {}
+      }
+
+      if (micStreamRef.current && analyserRef.current) return;
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       micStreamRef.current = stream;
-
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      const audioCtx = new AudioCtx();
-      audioContextRef.current = audioCtx;
 
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
@@ -705,10 +719,28 @@ export default function Home() {
 
   // Global click / tap ensures Web Audio context is unblocked
   const handleGlobalInteraction = () => {
-    setupAudioVAD();
-    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-      audioContextRef.current.resume();
+    // Synchronously create and warm up the AudioContext on direct user gesture for iOS Safari compatibility
+    if (!audioContextRef.current) {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const audioCtx = new AudioCtx();
+        audioContextRef.current = audioCtx;
+        
+        // Warm up sound buffer (Warms up audio hardware and gets past iOS auto-suspend policies)
+        try {
+          const buffer = audioCtx.createBuffer(1, 1, 22050);
+          const source = audioCtx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(audioCtx.destination);
+          source.start(0);
+        } catch (e) {}
+      }
+    } else if (audioContextRef.current.state === 'suspended') {
+      try {
+        audioContextRef.current.resume();
+      } catch (e) {}
     }
+    setupAudioVAD();
   };
 
   return (

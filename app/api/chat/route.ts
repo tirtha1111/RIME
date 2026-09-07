@@ -125,13 +125,16 @@ function isFastRealtimeQuery(query: string): boolean {
 
 function cleanModelOutput(text: string): string {
   if (!text) return '';
+  
+  // Strip complete <think>...</think> blocks
   let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-  if (!cleaned && text.includes('</think>')) {
-    cleaned = text.split('</think>').pop()?.trim() || '';
+  
+  // If stripping left nothing (e.g. model output is cut off during thinking or wrote everything inside thinking),
+  // just strip the tag markers themselves to preserve the content
+  if (!cleaned) {
+    cleaned = text.replace(/<\/?think>/gi, '').trim();
   }
-  if (!cleaned && text.startsWith('<think>')) {
-    cleaned = text.replace(/<think>/gi, '').trim();
-  }
+  
   return cleaned || text;
 }
 
@@ -154,11 +157,9 @@ async function callGroqOss120b(systemPrompt: string, userQuery: string, temperat
 
   const content = response.choices[0]?.message?.content || '';
   const cleaned = cleanModelOutput(content);
-  if (!cleaned) {
-    throw new Error('Empty response received from Groq openai/gpt-oss-120b.');
-  }
 
-  return cleaned;
+  // Return cleaned content, fallback to raw content, or a friendly default instead of throwing an error
+  return cleaned || content || 'I apologize, I am processing your request. Could you please repeat that?';
 }
 
 export async function POST(req: Request) {
@@ -278,7 +279,7 @@ Guidelines for follow-up:
 "realtime": Live stock prices, Indian share market, live weather, sports, currency rates, people biographies, leadership queries, recent facts, Wikipedia facts.
 "chatbot": Greetings, general conversation, jokes, advice, personal philosophy, creative ideas.
 Do not explain.`;
-        const resText = await callGroqOss120b(categoryPrompt, query, 0.1, 10);
+        const resText = await callGroqOss120b(categoryPrompt, query, 0.1, 150);
         const lowerRes = resText.toLowerCase();
         if (lowerRes.includes('image')) {
           const openInWindow = wantsSeparateWindow(query);
