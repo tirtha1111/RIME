@@ -6,7 +6,7 @@ import { generateImageFromPrompt } from '@/lib/imageGenerator';
 
 export const dynamic = 'force-dynamic';
 
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_MODEL = 'openai/gpt-oss-120b';
 
 // Lazy initialize Groq client
 function getGroqClient(): Groq | null {
@@ -217,7 +217,7 @@ Guidelines for follow-up:
         return NextResponse.json({
           text: spokenReply,
           intent: 'open-image-window',
-          provider: 'groq/llama-3.3-70b-versatile',
+          provider: 'groq/openai-gpt-oss-120b',
           openImageWindow: true,
           image: activeImage
         });
@@ -231,7 +231,7 @@ Guidelines for follow-up:
         return NextResponse.json({
           text: spokenReply,
           intent: 'chatbot',
-          provider: 'groq/llama-3.3-70b-versatile'
+          provider: 'groq/openai-gpt-oss-120b'
         });
       }
     }
@@ -258,7 +258,7 @@ Guidelines for follow-up:
       return NextResponse.json({
         text: spokenReply,
         intent: 'image-generation',
-        provider: 'groq/llama-3.3-70b-versatile',
+        provider: 'groq/openai-gpt-oss-120b',
         openImageWindow: openInWindow,
         image: generatedImage ? {
           url: generatedImage.imageUrl,
@@ -270,7 +270,54 @@ Guidelines for follow-up:
     }
 
     // 3. Determine if query is real-time
-    const isRealtime = isFastRealtimeQuery(query);
+    let isRealtime = isFastRealtimeQuery(query);
+
+    if (!isRealtime) {
+      try {
+        const categoryPrompt = `You are a query classifier for a voice assistant. Reply with exactly one word: "image", "realtime", or "chatbot".
+"image": Creating, generating, painting, or drawing photos, wallpapers, pictures, or visuals.
+"realtime": Live stock prices, Indian share market, live weather, sports, currency rates, people biographies, leadership queries, recent facts, Wikipedia facts.
+"chatbot": Greetings, general conversation, jokes, advice, personal philosophy, creative ideas.
+Do not explain.`;
+        const resText = await callGroqOss120b(categoryPrompt, query, 0.1, 150);
+        const lowerRes = resText.toLowerCase();
+        if (lowerRes.includes('image')) {
+          const openInWindow = wantsSeparateWindow(query);
+          const extractedPrompt = extractImagePrompt(query);
+          const generatedImage = await generateImageFromPrompt(extractedPrompt);
+          
+          let spokenReply = "";
+          if (openInWindow) {
+            spokenReply = lang === 'hin'
+              ? `मैंने "${extractedPrompt}" की तस्वीर तैयार कर दी है और इसे अलग विंडो में खोल दिया है।`
+              : `I have generated the image for "${extractedPrompt}" and opened it in a separate window for you.`;
+          } else {
+            spokenReply = lang === 'hin'
+              ? `मैंने आपके लिए "${extractedPrompt}" की तस्वीर तैयार कर दी है।`
+              : `I have generated the image for "${extractedPrompt}".`;
+          }
+
+          logConversation(hostName || 'Unknown', query, spokenReply, 'image-generation');
+
+          return NextResponse.json({
+            text: spokenReply,
+            intent: 'image-generation',
+            provider: 'groq/openai-gpt-oss-120b',
+            openImageWindow: openInWindow,
+            image: generatedImage ? {
+              url: generatedImage.imageUrl,
+              prompt: generatedImage.prompt,
+              model: generatedImage.model,
+              provider: generatedImage.provider
+            } : null
+          });
+        } else if (lowerRes.includes('realtime')) {
+          isRealtime = true;
+        }
+      } catch (catErr) {
+        console.warn("Classification fallback check:", catErr);
+      }
+    }
 
     let finalAnswer = "";
 
@@ -295,7 +342,7 @@ Voice synthesis guidelines:
       try {
         finalAnswer = await callGroqOss120b(systemPrompt, query, 0.2, 500);
       } catch (groqErr: any) {
-        console.error("Groq llama-3.3-70b-versatile realtime error:", groqErr);
+        console.error("Groq openai/gpt-oss-120b realtime error:", groqErr);
         finalAnswer = `I retrieved the live data (${realtimeInfo.data.slice(0, 100)}...), but Groq ${GROQ_MODEL} requires your GROQ_API_KEY in Settings > Secrets.`;
       }
     } else {
@@ -314,7 +361,7 @@ Language requirement: ${langNote}`;
       try {
         finalAnswer = await callGroqOss120b(systemPrompt, query, 0.7, 500);
       } catch (groqErr: any) {
-        console.error("Groq llama-3.3-70b-versatile chat error:", groqErr);
+        console.error("Groq openai/gpt-oss-120b chat error:", groqErr);
         finalAnswer = `Please ensure your GROQ_API_KEY is configured in Settings > Secrets to power the Groq ${GROQ_MODEL} inference engine.`;
       }
     }
@@ -327,14 +374,14 @@ Language requirement: ${langNote}`;
     return NextResponse.json({ 
       text: finalAnswer, 
       intent: isRealtime ? 'realtime' : 'chatbot',
-      provider: 'groq/llama-3.3-70b-versatile',
+      provider: 'groq/openai-gpt-oss-120b',
       model: GROQ_MODEL,
       followedUpOnInterruption: Boolean(interruptedContext?.wasInterrupted)
     });
   } catch (err: any) {
     console.error("API Error", err);
     return NextResponse.json({ 
-      text: "I encountered an error processing your request with Groq llama-3.3-70b-versatile.",
+      text: "I encountered an error processing your request with Groq openai/gpt-oss-120b.",
       error: err?.message 
     }, { status: 500 });
   }

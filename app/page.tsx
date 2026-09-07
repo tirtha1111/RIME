@@ -86,6 +86,7 @@ export default function Home() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const currentSpokenTextRef = useRef<string>('');
+  const currentChatSessionIdRef = useRef<number>(0);
 
   // MediaRecorder Whisper VAD Refs
   const mediaRecorderRef = useRef<any>(null);
@@ -203,6 +204,9 @@ export default function Home() {
   const triggerInterruption = useCallback(() => {
     if (stateRef.current !== 'SPEAKING') return;
 
+    // Invalidate any in-flight chat query API responses immediately
+    currentChatSessionIdRef.current += 1;
+
     clearAllTimeouts();
     rimeAudioClient.stop();
     rimeSound.stopAll();
@@ -250,6 +254,10 @@ export default function Home() {
     setLatency(120);
     rimeAudioClient.stop();
     rimeSound.stopAll();
+
+    // Increment chat session ID and capture current value
+    currentChatSessionIdRef.current += 1;
+    const chatSessionId = currentChatSessionIdRef.current;
 
     // Stop speech recognition to clear buffer for the next turn
     if (recognitionRef.current) {
@@ -327,6 +335,13 @@ export default function Home() {
         })
       });
       const data = await res.json();
+
+      // Discard this response if user interrupted or triggered a new query while fetching
+      if (chatSessionId !== currentChatSessionIdRef.current) {
+        console.log("Discarded stale chat response due to interruption.");
+        return;
+      }
+
       const elapsed = Math.round(performance.now() - start);
       setLatency(elapsed);
 
@@ -490,18 +505,9 @@ export default function Home() {
               }
             }
 
-            // Stop any ongoing speech if the user said a valid statement (require at least 5 words to interrupt)
+            // Stop any ongoing speech if the user said a valid statement
             if (stateRef.current === 'SPEAKING' || stateRef.current === 'THINKING') {
-              const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
-              if (wordCount >= 5) {
-                triggerInterruption();
-              } else {
-                console.log("Ignored brief user phrase during assistant output:", text);
-                if (stateRef.current === 'THINKING') {
-                  setState('SPEAKING');
-                }
-                return;
-              }
+              triggerInterruption();
             }
             
             // Render user transcript bubble
@@ -595,15 +601,15 @@ export default function Home() {
 
         // Always-On voice activity tracking loop
         if (isAlwaysOnActiveRef.current) {
-          // Speak / speech activity gate (raised to filter out very sensitive mic noise and breathing)
-          const SPEECH_THRESHOLD = 22;
+          // Speak / speech activity gate
+          const SPEECH_THRESHOLD = 15; // Ignore low-level background noise
           
           if (normalized > SPEECH_THRESHOLD) {
             consecutiveSpeechFrames++;
             
-            // To interrupt the AI, require continuous sustained sound of 100 frames (~1.7s, representing about 5-6 spoken words)
+            // To interrupt the AI, require continuous sustained sound (e.g. 50 frames ~800ms, representing 3-5 continuous words)
             // If the AI is NOT speaking, we want immediate responsiveness (e.g. 5 frames ~80ms)
-            const requiredFrames = stateRef.current === 'SPEAKING' ? 100 : 5;
+            const requiredFrames = stateRef.current === 'SPEAKING' ? 50 : 5;
             
             if (consecutiveSpeechFrames >= requiredFrames) {
               silentTicks = 0;
@@ -872,7 +878,7 @@ export default function Home() {
               
               {/* Metadata strip */}
               <div className="mt-2.5 flex items-center gap-2 text-[10px] font-mono text-zinc-400">
-                <span>Model: <span className="text-cyan-300 font-bold">Groq llama-3.3-70b-versatile</span></span>
+                <span>Model: <span className="text-cyan-300 font-bold">Groq openai/gpt-oss-120b</span></span>
                 <span>•</span>
                 <span>Speaker: <span className="text-cyan-300 font-bold">{selectedSpeaker}</span></span>
                 {latency && (
@@ -955,7 +961,7 @@ export default function Home() {
 
               <div className="space-y-3 text-xs text-zinc-300">
                 <p className="leading-relaxed">
-                  P.H.I. is powered exclusively by Groq LPU inference (<span className="font-mono text-cyan-300">llama-3.3-70b-versatile</span>) and ultra-realistic Rime Voice synthesis with Always-On Voice Activity Detection.
+                  P.H.I. is powered exclusively by Groq LPU inference (<span className="font-mono text-cyan-300">openai/gpt-oss-120b</span>) and ultra-realistic Rime Voice synthesis with Always-On Voice Activity Detection.
                 </p>
 
                 <div className="p-3 rounded-xl bg-zinc-900/60 border border-white/5 space-y-2">
@@ -963,7 +969,7 @@ export default function Home() {
                     Recommended Environment Variables:
                   </div>
                   <ul className="list-disc list-inside space-y-1 font-mono text-[11px] text-zinc-300">
-                    <li><span className="text-cyan-400 font-bold">GROQ_API_KEY</span>: Groq LPU API key for llama-3.3-70b-versatile</li>
+                    <li><span className="text-cyan-400 font-bold">GROQ_API_KEY</span>: Groq LPU API key for openai/gpt-oss-120b</li>
                     <li><span className="text-emerald-400 font-bold">RIME_API_KEY</span>: Rime Voice synthesis key</li>
                     <li><span className="text-amber-400 font-bold">HF_TOKEN</span>: Hugging Face key for FLUX image synthesis</li>
                     <li><span className="text-cyan-400 font-bold">FINNHUB_API_KEY</span>: Real-time stock feeds</li>
@@ -1036,7 +1042,7 @@ export default function Home() {
                 <div className="p-2.5 rounded-xl bg-zinc-900/60 border border-white/5">
                   <div className="text-purple-400 font-bold mb-0.5">🔄 Interruption &amp; Context Follow-Up</div>
                   <p className="text-[11px] text-zinc-400">
-                    Instant barge-in halts assistant playback and passes the interrupted context to Groq <code className="text-purple-300 font-bold">llama-3.3-70b-versatile</code> to seamlessly follow up on previous topics.
+                    Instant barge-in halts assistant playback and passes the interrupted context to Groq <code className="text-purple-300 font-bold">openai/gpt-oss-120b</code> to seamlessly follow up on previous topics.
                   </p>
                 </div>
 
