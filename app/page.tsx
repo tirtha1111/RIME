@@ -50,7 +50,7 @@ export default function Home() {
   const [latency, setLatency] = useState<number | null>(null);
   const [speechVolume, setSpeechVolume] = useState<number>(0);
   const [micEnergy, setMicEnergy] = useState<number>(0);
-  const [isAlwaysOnActive, setIsAlwaysOnActive] = useState<boolean>(true);
+  const [isAlwaysOnActive, setIsAlwaysOnActive] = useState<boolean>(false);
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   
   // Rime Voice language & speaker state
@@ -77,7 +77,7 @@ export default function Home() {
   const latestGeneratedImageRef = useRef<GeneratedImageMetadata | null>(null);
   const selectedLangRef = useRef<RimeLanguage>(RIME_LANGUAGES[0]);
   const selectedSpeakerRef = useRef<string>(RIME_LANGUAGES[0].defaultSpeaker);
-  const isAlwaysOnActiveRef = useRef<boolean>(true);
+  const isAlwaysOnActiveRef = useRef<boolean>(false);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const interruptedContextRef = useRef<InterruptedContext | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -522,7 +522,7 @@ export default function Home() {
     recognitionRef.current = recognition;
 
     // Start recognition automatically
-    if (isAlwaysOnActive) {
+    if (isAlwaysOnActiveRef.current) {
       try {
         recognition.start();
         setupAudioVAD();
@@ -542,7 +542,6 @@ export default function Home() {
     setupAudioVAD, 
     triggerInterruption, 
     handleSendQuery, 
-    isAlwaysOnActive, 
     isValidVerbalStatement, 
     isInterruptionStatement
   ]);

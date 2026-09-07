@@ -467,7 +467,9 @@ export default function AIGlobe({ state, speechVolume = 0.5 }: AIGlobeProps) {
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
-      container.removeChild(renderer.domElement);
+      if (container && renderer.domElement && container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
       
       // Dispose Three.js objects
       coreGeo.dispose();

@@ -133,8 +133,12 @@ class LiveKitManager {
 
       room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
         if (track.kind === Track.Kind.Audio) {
+          const oldEl = document.getElementById(`livekit-audio-${participant.identity}`);
+          if (oldEl) oldEl.remove();
+
           const remoteAudio = track.attach();
           remoteAudio.id = `livekit-audio-${participant.identity}`;
+          remoteAudio.style.display = 'none';
           document.body.appendChild(remoteAudio);
           this.attachAudioVisualizer(track as RemoteAudioTrack);
 
