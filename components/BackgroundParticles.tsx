@@ -25,7 +25,7 @@ export default function BackgroundParticles() {
   }, []);
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-[#020205]">
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#020205]">
       {/* 1. Deep space radial background gradients */}
       <div 
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] 
