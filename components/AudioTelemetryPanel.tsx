@@ -68,7 +68,7 @@ export default function AudioTelemetryPanel({
               Mic Sound Level
             </span>
             <span className="font-mono text-[10px] font-bold text-cyan-300">
-              {micEnergy}% {micEnergy > 30 ? '(AUDIO DETECTED)' : '(QUIET)'}
+              {micEnergy}% {micEnergy > 6 ? '(AUDIO DETECTED)' : '(QUIET)'}
             </span>
           </div>
 
@@ -99,9 +99,9 @@ export default function AudioTelemetryPanel({
           </div>
           
           <div className="flex items-center justify-between mt-1.5 text-[8px] font-mono text-zinc-500">
-            <span>Noise Filter: Active</span>
-            <span>Statement-Gated</span>
-            <span>0 dB</span>
+            <span className="text-cyan-400/80">Quiet Floor: Very Low (6%)</span>
+            <span>Sensitivity: High</span>
+            <span>-48 dB</span>
           </div>
         </div>
 

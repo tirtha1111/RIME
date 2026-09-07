@@ -407,7 +407,10 @@ export default function Home() {
           sum += dataArray[i];
         }
         const avg = sum / dataArray.length;
-        const normalized = Math.min(100, Math.round((avg / 128) * 100));
+        // Non-linear sensitivity curve to capture quiet speech signals and whispers cleanly
+        const normalized = avg > 0.5 
+          ? Math.min(100, Math.round(Math.pow(avg / 90, 0.75) * 100))
+          : 0;
         setMicEnergy(normalized);
 
         // Volume meter is visual-only: Decision-making is never interrupted by raw audio volume
