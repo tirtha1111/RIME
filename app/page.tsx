@@ -616,6 +616,19 @@ export default function Home() {
 
   // Mic Button tap handler
   const handleMicTap = () => {
+    if (!recognitionRef.current) {
+      setTranscript(prev => [
+        ...prev,
+        {
+          id: Math.random().toString(),
+          speaker: 'PHI AI',
+          text: 'System Error: Voice-to-Text (Web Speech API) is not supported in this browser. Please use Chrome or Safari.',
+          status: 'interrupted',
+        }
+      ]);
+      return;
+    }
+
     setupAudioVAD();
 
     if (state === 'SPEAKING') {
@@ -632,6 +645,13 @@ export default function Home() {
       // Ensure Always-on is running
       if (!isAlwaysOnActive) {
         handleToggleAlwaysOn();
+      } else {
+        // Mobile Safari fix: Explicitly restart recognition on user gesture if it died silently
+        try {
+          recognitionRef.current.start();
+        } catch (e) {
+          // Ignore if already started
+        }
       }
       setState('LISTENING');
       rimeSound.playMicStart();
