@@ -50,7 +50,7 @@ export default function Home() {
   const [latency, setLatency] = useState<number | null>(null);
   const [speechVolume, setSpeechVolume] = useState<number>(0);
   const [micEnergy, setMicEnergy] = useState<number>(0);
-  const [isAlwaysOnActive, setIsAlwaysOnActive] = useState<boolean>(false);
+  const [isAlwaysOnActive, setIsAlwaysOnActive] = useState<boolean>(true);
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   
   // Rime Voice language & speaker state
@@ -77,7 +77,8 @@ export default function Home() {
   const latestGeneratedImageRef = useRef<GeneratedImageMetadata | null>(null);
   const selectedLangRef = useRef<RimeLanguage>(RIME_LANGUAGES[0]);
   const selectedSpeakerRef = useRef<string>(RIME_LANGUAGES[0].defaultSpeaker);
-  const isAlwaysOnActiveRef = useRef<boolean>(false);
+  const isAlwaysOnActiveRef = useRef<boolean>(true);
+  const isRecognitionRunningRef = useRef<boolean>(false);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const interruptedContextRef = useRef<InterruptedContext | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -85,6 +86,13 @@ export default function Home() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const currentSpokenTextRef = useRef<string>('');
+
+  // MediaRecorder Whisper VAD Refs
+  const mediaRecorderRef = useRef<any>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const isRecordingRef = useRef<boolean>(false);
+  const vadSilenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const vadSpeakingRef = useRef<boolean>(false);
 
   useEffect(() => {
     stateRef.current = state;
@@ -378,6 +386,16 @@ export default function Home() {
   const isInterruptionStatement = useCallback((text: string): boolean => {
     const cleaned = text.trim();
     if (!isValidVerbalStatement(cleaned)) return false;
+
+    // Echo cancellation guard: ignore if the recognized text is a substring of what the assistant is currently speaking
+    if (currentSpokenTextRef.current) {
+      const assistantLower = currentSpokenTextRef.current.toLowerCase();
+      const userLower = cleaned.toLowerCase();
+      if (assistantLower.includes(userLower) || userLower.includes(assistantLower)) {
+        return false;
+      }
+    }
+
     const words = cleaned.split(/\s+/).filter(Boolean);
     // At least 2 spoken words, OR a distinct verbal command of at least 2 characters (e.g., "no", "stop", "wait")
     if (words.length >= 2) return true;
@@ -385,7 +403,118 @@ export default function Home() {
     return false;
   }, [isValidVerbalStatement]);
 
-  // Initialize Microphone & VAD Analyser Node (Metering only, never interrupts directly on volume)
+  // Start recording audio chunks via MediaRecorder
+  const startRecording = useCallback(() => {
+    if (!micStreamRef.current || isRecordingRef.current) return;
+    
+    try {
+      audioChunksRef.current = [];
+      const options = { mimeType: 'audio/webm' };
+      let recorder: any;
+      try {
+        recorder = new MediaRecorder(micStreamRef.current, options);
+      } catch (e) {
+        // Safe fallback for browsers (like Safari) with limited format selections
+        recorder = new MediaRecorder(micStreamRef.current);
+      }
+      
+      mediaRecorderRef.current = recorder;
+      
+      recorder.ondataavailable = (e: any) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+      
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current?.mimeType || 'audio/webm' });
+        audioChunksRef.current = [];
+        
+        // Skip tiny/noisy recordings (under 1.5 KB is likely a brief non-verbal sound or tap)
+        if (audioBlob.size < 1500) {
+          if (stateRef.current === 'LISTENING') {
+            setState('READY');
+          }
+          return;
+        }
+        
+        setState('THINKING');
+        
+        try {
+          const formData = new FormData();
+          formData.append('file', audioBlob, 'speech.webm');
+          formData.append('lang', selectedLangRef.current.id);
+          
+          const response = await fetch('/api/transcribe', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (!response.ok) {
+            throw new Error('Transcription API error');
+          }
+          
+          const resData = await response.json();
+          const text = (resData.text || '').trim();
+          
+          if (text.length >= 2) {
+            // Echo/self-interruption cancellation check
+            if (currentSpokenTextRef.current) {
+              const assistantLower = currentSpokenTextRef.current.toLowerCase();
+              const userLower = text.toLowerCase();
+              if (assistantLower.includes(userLower) || userLower.includes(assistantLower)) {
+                setState('READY');
+                return;
+              }
+            }
+
+            // Stop any ongoing speech if the user said a valid statement
+            if (stateRef.current === 'SPEAKING' || stateRef.current === 'THINKING') {
+              triggerInterruption();
+            }
+            
+            // Render user transcript bubble
+            setTranscript(prev => {
+              const copy = prev.map(item => item.status === 'active' ? { ...item, status: 'normal' as const } : item);
+              return [
+                ...copy,
+                {
+                  id: Math.random().toString(),
+                  speaker: 'USER',
+                  text: text,
+                  status: 'normal',
+                }
+              ];
+            });
+            
+            // Stream response
+            await handleSendQuery(text);
+          } else {
+            setState('READY');
+          }
+        } catch (err) {
+          console.error("VAD Transcribe error:", err);
+          setState('READY');
+        }
+      };
+      
+      recorder.start(100);
+      isRecordingRef.current = true;
+    } catch (err) {
+      console.warn("Failed to start MediaRecorder:", err);
+    }
+  }, [handleSendQuery, triggerInterruption]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecordingRef.current) {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {}
+      isRecordingRef.current = false;
+    }
+  }, []);
+
+  // Initialize Microphone & VAD Analyser Node (Metering & voice-driven recording control)
   const setupAudioVAD = useCallback(async () => {
     try {
       if (audioContextRef.current && micStreamRef.current) return;
@@ -404,6 +533,7 @@ export default function Home() {
       analyserRef.current = analyser;
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      let silentTicks = 0;
 
       const checkVolume = () => {
         if (!analyserRef.current) return;
@@ -414,13 +544,51 @@ export default function Home() {
           sum += dataArray[i];
         }
         const avg = sum / dataArray.length;
-        // Non-linear sensitivity curve to capture quiet speech signals and whispers cleanly
         const normalized = avg > 0.5 
           ? Math.min(100, Math.round(Math.pow(avg / 90, 0.75) * 100))
           : 0;
         setMicEnergy(normalized);
 
-        // Volume meter is visual-only: Decision-making is never interrupted by raw audio volume
+        // Always-On voice activity tracking loop
+        if (isAlwaysOnActiveRef.current) {
+          // Speak / speech activity gate
+          const SPEECH_THRESHOLD = 8;
+          
+          if (normalized > SPEECH_THRESHOLD) {
+            silentTicks = 0;
+            
+            // Immediate interruption on voice activity
+            if (stateRef.current === 'SPEAKING') {
+              triggerInterruption();
+            }
+            
+            if (!vadSpeakingRef.current) {
+              vadSpeakingRef.current = true;
+              setState('LISTENING');
+              rimeSound.playMicStart();
+              startRecording();
+            }
+            
+            if (vadSilenceTimerRef.current) {
+              clearTimeout(vadSilenceTimerRef.current);
+              vadSilenceTimerRef.current = null;
+            }
+          } else {
+            if (vadSpeakingRef.current) {
+              silentTicks++;
+              // If consecutive silent frames denote a complete sentence pause (approx 1.4s of silence)
+              if (silentTicks > 85 && !vadSilenceTimerRef.current) {
+                vadSilenceTimerRef.current = setTimeout(() => {
+                  vadSpeakingRef.current = false;
+                  stopRecording();
+                  silentTicks = 0;
+                  vadSilenceTimerRef.current = null;
+                }, 50);
+              }
+            }
+          }
+        }
+
         animFrameRef.current = requestAnimationFrame(checkVolume);
       };
 
@@ -428,134 +596,22 @@ export default function Home() {
     } catch (err) {
       console.warn("Audio VAD setup note:", err);
     }
-  }, []);
+  }, [startRecording, stopRecording, triggerInterruption]);
 
-  // Initialize Speech Recognition in Continuous Mode with Statement Filtering
+  // Unified auto-start of microphone metering/VAD
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = selectedLanguage.bcp47;
-
-    recognition.onstart = () => {
-      // Mic is active
+    
+    // Bind a dummy recognition object for compatibility with legacy functions if any
+    recognitionRef.current = {
+      stop: () => {},
+      lang: ''
     };
 
-    recognition.onresult = (event: any) => {
-      const results = Array.from(event.results);
-      
-      // Map over all results and join them to obtain the full complete sentence(s) in this session
-      const transcriptText = results
-        .map((result: any) => result[0]?.transcript || '')
-        .join(' ')
-        .trim();
-
-      // Filter out empty or noise fragments
-      if (!isValidVerbalStatement(transcriptText)) return;
-
-      // Statement-gated interruption: ONLY interrupt if a clear verbal statement is passed
-      if (stateRef.current === 'SPEAKING' || stateRef.current === 'THINKING') {
-        if (isInterruptionStatement(transcriptText)) {
-          triggerInterruption();
-        } else {
-          // Do NOT interrupt decision making or speech for minor non-statement noises
-          return;
-        }
-      }
-
-      // If in READY, transition to LISTENING only when a valid verbal statement starts
-      if (stateRef.current === 'READY' || stateRef.current === 'INTERRUPTED') {
-        setState('LISTENING');
-        rimeSound.playMicStart();
-      }
-
-      // Update or append user transcript item
-      setTranscript(prev => {
-        const copy = [...prev];
-        const lastIdx = copy.findLastIndex(item => item.speaker === 'USER');
-        
-        if (lastIdx !== -1 && copy[lastIdx].status === 'active') {
-          copy[lastIdx].text = transcriptText;
-          return copy;
-        } else {
-          return [
-            ...copy,
-            {
-              id: Math.random().toString(),
-              speaker: 'USER',
-              text: transcriptText,
-              status: 'active',
-            }
-          ];
-        }
-      });
-
-      // Reset Silence Timer (1400ms pause ensures complete statements without cutting user off)
-      if (silenceTimeoutRef.current) {
-        clearTimeout(silenceTimeoutRef.current);
-      }
-
-      silenceTimeoutRef.current = setTimeout(() => {
-        if (stateRef.current === 'LISTENING') {
-          const finalQuery = transcriptRef.current.findLast(t => t.speaker === 'USER')?.text || '';
-          if (isValidVerbalStatement(finalQuery)) {
-            handleSendQuery(finalQuery);
-          } else {
-            setState('READY');
-          }
-        }
-      }, 1400);
-    };
-
-    recognition.onerror = (event: any) => {
-      // 'no-speech' is expected during silent intervals in continuous mode
-      if (event.error !== 'no-speech') {
-        console.warn("Speech recognition status:", event.error);
-      }
-    };
-
-    recognition.onend = () => {
-      // In Always-On mode, automatically restart recognition when it naturally ends
-      if (isAlwaysOnActiveRef.current) {
-        try {
-          recognition.start();
-        } catch (e) {
-          // Already running or restart in queue
-        }
-      }
-    };
-
-    recognitionRef.current = recognition;
-
-    // Start recognition automatically
     if (isAlwaysOnActiveRef.current) {
-      try {
-        recognition.start();
-        setupAudioVAD();
-      } catch (err) {
-        console.warn("Speech recognition auto-start:", err);
-      }
+      setupAudioVAD();
     }
-
-    return () => {
-      if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-      try {
-        recognition.stop();
-      } catch (e) {}
-    };
-  }, [
-    selectedLanguage.bcp47, 
-    setupAudioVAD, 
-    triggerInterruption, 
-    handleSendQuery, 
-    isValidVerbalStatement, 
-    isInterruptionStatement
-  ]);
+  }, [setupAudioVAD]);
 
   // Clean up timers & audio context on unmount
   useEffect(() => {
@@ -627,54 +683,23 @@ export default function Home() {
 
   // Mic Button tap handler
   const handleMicTap = () => {
-    if (!recognitionRef.current) {
-      setTranscript(prev => [
-        ...prev,
-        {
-          id: Math.random().toString(),
-          speaker: 'PHI AI',
-          text: 'System Error: Voice-to-Text (Web Speech API) is not supported in this browser. Please use Chrome or Safari.',
-          status: 'interrupted',
-        }
-      ]);
-      return;
-    }
-
     setupAudioVAD();
 
     if (state === 'SPEAKING') {
       // Tap to interrupt
       triggerInterruption();
     } else if (state === 'LISTENING') {
-      // Tap to immediately submit captured speech
-      if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-      const userText = transcriptRef.current.findLast(t => t.speaker === 'USER')?.text || '';
-      if (userText.trim()) {
-        handleSendQuery(userText);
+      // Tap to immediately stop and submit the speech
+      if (vadSpeakingRef.current) {
+        vadSpeakingRef.current = false;
+        stopRecording();
       }
     } else {
-      // Ensure Always-on is running
-      if (!isAlwaysOnActive) {
-        handleToggleAlwaysOn();
-      } else {
-        // Mobile Safari fix: Explicitly restart recognition on user gesture if it died silently
-        try {
-          recognitionRef.current.start();
-        } catch (e) {
-          // Ignore if already started
-        }
-      }
+      // Manual start recording
+      vadSpeakingRef.current = true;
       setState('LISTENING');
       rimeSound.playMicStart();
-      setTranscript(prev => [
-        ...prev,
-        {
-          id: Math.random().toString(),
-          speaker: 'USER',
-          text: '...',
-          status: 'active',
-        }
-      ]);
+      startRecording();
     }
   };
 
@@ -835,9 +860,14 @@ export default function Home() {
               </div>
 
               {/* Seamless Voice Interruption Tip */}
-              <div className="mt-2 flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 bg-zinc-950/40 border border-white/5 px-3 py-1 rounded-full">
-                <Zap className="w-3 h-3 text-cyan-400" />
-                <span>Hands-free: Speak a full verbal statement to converse or interrupt</span>
+              <div className="mt-3 flex flex-col items-center gap-1.5 text-[10px] font-mono text-zinc-500 bg-zinc-950/40 border border-white/5 px-4 py-2.5 rounded-2xl max-w-sm text-center">
+                <div className="flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Hands-free: Speak a full statement to converse or interrupt</span>
+                </div>
+                <p className="text-[9px] text-zinc-600 mt-1 font-sans leading-relaxed">
+                  Note: If voice transcription is silent, open the app in a **New Tab** using the top-right settings menu to bypass iframe browser sandbox security.
+                </p>
               </div>
             </div>
           </div>
