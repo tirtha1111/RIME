@@ -119,8 +119,3 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to start int
 - `npm run start` - Runs the production server
 - `npm run lint` - Executes ESLint checks across the codebase
 
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
