@@ -879,30 +879,6 @@ export default function Home() {
                 micEnergy={micEnergy}
                 onClick={handleMicTap} 
               />
-              
-              {/* Metadata strip */}
-              <div className="mt-2.5 flex items-center gap-2 text-[10px] font-mono text-zinc-400">
-                <span>Model: <span className="text-cyan-300 font-bold">Groq openai/gpt-oss-120b</span></span>
-                <span>•</span>
-                <span>Speaker: <span className="text-cyan-300 font-bold">{selectedSpeaker}</span></span>
-                {latency && (
-                  <>
-                    <span>•</span>
-                    <span className="text-emerald-400">{latency}ms</span>
-                  </>
-                )}
-              </div>
-
-              {/* Seamless Voice Interruption Tip */}
-              <div className="mt-3 flex flex-col items-center gap-1.5 text-[10px] font-mono text-zinc-500 bg-zinc-950/40 border border-white/5 px-4 py-2.5 rounded-2xl max-w-sm text-center">
-                <div className="flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Hands-free: Speak a full statement to converse or interrupt</span>
-                </div>
-                <p className="text-[9px] text-zinc-600 mt-1 font-sans leading-relaxed">
-                  Note: If voice transcription is silent, open the app in a **New Tab** using the top-right settings menu to bypass iframe browser sandbox security.
-                </p>
-              </div>
             </div>
           </div>
 
