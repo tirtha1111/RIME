@@ -60,8 +60,8 @@ Create a `.env.local` or `.env` file in the root directory:
 # Groq API Key (For fast LLM inference)
 GROQ_API_KEY=your_groq_api_key_here
 
-# Hugging Face API Key (For Image Generation)
-HF_API_KEY=your_huggingface_api_key_here
+# Google Gemini API Key (For Image Generation)
+GEMINI_API_KEY=your_gemini_api_key_here
 
 # Optional: Finnhub API Key (For real-time stock market data)
 FINNHUB_API_KEY=your_finnhub_api_key_here
@@ -96,7 +96,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to start int
 ├── app/
 │   ├── api/
 │   │   ├── chat/        # Main LLM Groq & Tool grounding API route
-│   │   └── generate/    # Hugging Face Image Generation API route
+│   │   └── generate/    # Gemini Image Generation API route
 │   ├── globals.css      # Tailwind & global styling
 │   ├── layout.tsx       # Root layout & providers
 │   └── page.tsx         # Main PHI AI Voice Interface & State Controller
@@ -119,3 +119,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to start int
 - `npm run start` - Runs the production server
 - `npm run lint` - Executes ESLint checks across the codebase
 
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
